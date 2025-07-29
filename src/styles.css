@@ -1,0 +1,515 @@
+.document-styler-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+}
+
+.document-styler-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.document-styler-section {
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter);
+    padding-bottom: 16px;
+}
+
+.document-styler-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.document-styler-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: var(--b3-theme-on-surface);
+    display: flex;
+    align-items: center;
+}
+
+.document-styler-section-title::before {
+    content: "";
+    width: 3px;
+    height: 16px;
+    background-color: var(--b3-theme-primary);
+    margin-right: 8px;
+    border-radius: 2px;
+}
+
+.document-styler-option {
+    margin-bottom: 12px;
+}
+
+.document-styler-option .b3-switch {
+    align-items: center;
+}
+
+.document-styler-description {
+    font-size: 12px;
+    color: var(--b3-theme-on-surface-light);
+    margin-top: 8px;
+    line-height: 1.4;
+    padding-left: 16px;
+    border-left: 2px solid var(--b3-theme-surface-light);
+}
+
+.document-styler-info {
+    padding: 8px 12px;
+    background-color: var(--b3-theme-surface);
+    border-radius: var(--b3-border-radius);
+    font-size: 13px;
+    color: var(--b3-theme-on-surface-light);
+    border: 1px solid var(--b3-theme-surface-lighter);
+}
+
+.document-styler-figures-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: var(--b3-border-radius);
+}
+
+.document-styler-figure-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.document-styler-figure-item:last-child {
+    border-bottom: none;
+}
+
+.document-styler-figure-item:hover {
+    background-color: var(--b3-theme-surface);
+}
+
+.document-styler-figure-item .figure-label,
+.document-styler-figure-item .table-label {
+    font-weight: 600;
+    color: var(--b3-theme-primary);
+    margin-right: 8px;
+    min-width: 80px;
+    font-size: 12px;
+}
+
+.document-styler-figure-item .figure-content {
+    flex: 1;
+    font-size: 12px;
+    color: var(--b3-theme-on-surface-light);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 空状态样式 */
+.b3-list--empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--b3-theme-on-surface-light);
+    font-size: 13px;
+}
+
+/* 开关样式优化 */
+.document-styler-option .b3-switch {
+    margin-bottom: 0;
+}
+
+.document-styler-option .b3-switch span:last-child {
+    font-size: 14px;
+    color: var(--b3-theme-on-surface);
+}
+
+/* 标题编号样式选择器 */
+.document-styler-option-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.document-styler-level-label {
+    font-weight: 600;
+    color: var(--b3-theme-on-surface);
+    font-size: 14px;
+}
+
+.document-styler-style-example {
+    font-size: 12px;
+    color: var(--b3-theme-on-surface-light);
+    background-color: var(--b3-theme-surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.document-styler-format-help {
+    font-size: 11px;
+    color: var(--b3-theme-on-surface-light);
+    font-style: italic;
+}
+
+/* 样式选择器优化 */
+.document-styler-option select.b3-select {
+    width: 100%;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: var(--b3-border-radius);
+    background-color: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    transition: border-color 0.2s ease;
+}
+
+.document-styler-option select.b3-select:focus {
+    border-color: var(--b3-theme-primary);
+    outline: none;
+}
+
+.document-styler-option select.b3-select option {
+    padding: 4px 8px;
+}
+
+/* 文档状态样式 */
+.document-styler-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.document-styler-status-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    background-color: var(--b3-theme-surface);
+    border-radius: var(--b3-border-radius);
+    border: 1px solid var(--b3-theme-surface-lighter);
+    font-size: 12px;
+}
+
+.document-styler-status-item input[type="checkbox"] {
+    margin-right: 6px;
+}
+
+.document-styler-status-item.enabled {
+    border-color: var(--b3-theme-primary-lighter);
+    background-color: var(--b3-theme-primary-lightest);
+}
+
+.document-styler-status-item.disabled {
+    opacity: 0.6;
+}
+
+/* 格式输入框优化 */
+.document-styler-option input.b3-text-field {
+    width: 100%;
+    font-size: 13px;
+    padding: 6px 8px;
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: var(--b3-border-radius);
+    background-color: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    transition: border-color 0.2s ease;
+    font-family: monospace;
+}
+
+.document-styler-option input.b3-text-field:focus {
+    border-color: var(--b3-theme-primary);
+    outline: none;
+}
+
+.document-styler-option input.b3-text-field::placeholder {
+    color: var(--b3-theme-on-surface-light);
+    font-style: italic;
+}
+
+/* 子节样式 */
+.document-styler-subsection {
+    margin-bottom: 16px;
+}
+
+.document-styler-subsection h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--b3-theme-on-surface);
+    margin: 0 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter);
+}
+
+/* 工具提示样式 */
+.document-styler-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.document-styler-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+    border: 1px solid var(--b3-theme-surface-lighter);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.document-styler-tooltip:hover::after {
+    opacity: 1;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .document-styler-content {
+        padding: 12px;
+    }
+    
+    .document-styler-section {
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+    }
+    
+    .document-styler-section-title {
+        font-size: 15px;
+        margin-bottom: 10px;
+    }
+}
+
+/* 滚动条样式 */
+.document-styler-content::-webkit-scrollbar,
+.document-styler-figures-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.document-styler-content::-webkit-scrollbar-track,
+.document-styler-figures-list::-webkit-scrollbar-track {
+    background: var(--b3-theme-surface);
+    border-radius: 3px;
+}
+
+.document-styler-content::-webkit-scrollbar-thumb,
+.document-styler-figures-list::-webkit-scrollbar-thumb {
+    background: var(--b3-theme-surface-lighter);
+    border-radius: 3px;
+}
+
+.document-styler-content::-webkit-scrollbar-thumb:hover,
+.document-styler-figures-list::-webkit-scrollbar-thumb:hover {
+    background: var(--b3-theme-on-surface-light);
+}
+
+/* 动画效果 */
+.document-styler-section {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 标题编号样式增强 */
+.protyle-wysiwyg [data-subtype^="h"]:before {
+    user-select: none;
+    font-weight: normal;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.protyle-wysiwyg [data-subtype^="h"]:hover:before {
+    opacity: 1;
+}
+
+/* 图片表格标题样式增强 */
+.figure-caption,
+.table-caption {
+    user-select: none;
+    transition: opacity 0.2s ease;
+}
+
+.figure-caption:hover,
+.table-caption:hover {
+    opacity: 0.8;
+}
+
+.figure-caption .figure-label,
+.table-caption .table-label {
+    user-select: text;
+    cursor: text;
+}
+
+.figure-caption .caption-text,
+.table-caption .caption-text {
+    user-select: text;
+    cursor: text;
+    outline: none;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.figure-caption .caption-text:focus,
+.table-caption .caption-text:focus {
+    background-color: var(--b3-theme-surface);
+    border-radius: 2px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+}
+
+/* 加载状态 */
+.document-styler-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--b3-theme-on-surface-light);
+    font-size: 13px;
+}
+
+.document-styler-loading::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--b3-theme-surface-lighter);
+    border-top: 2px solid var(--b3-theme-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 错误状态 */
+.document-styler-error {
+    padding: 12px;
+    background-color: var(--b3-theme-error-lighter);
+    border: 1px solid var(--b3-theme-error-light);
+    border-radius: var(--b3-border-radius);
+    color: var(--b3-theme-error);
+    font-size: 13px;
+    margin: 8px 0;
+}
+
+/* 成功状态 */
+.document-styler-success {
+    padding: 12px;
+    background-color: var(--b3-theme-success-lighter);
+    border: 1px solid var(--b3-theme-success-light);
+    border-radius: var(--b3-border-radius);
+    color: var(--b3-theme-success);
+    font-size: 13px;
+    margin: 8px 0;
+}
+
+/* 工具提示样式 */
+.document-styler-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.document-styler-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--b3-theme-surface-dark);
+    color: var(--b3-theme-on-surface-dark);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.document-styler-tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 按钮样式 */
+.document-styler-button {
+    padding: 6px 12px;
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: var(--b3-border-radius);
+    background-color: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.document-styler-button:hover {
+    background-color: var(--b3-theme-surface-light);
+    border-color: var(--b3-theme-primary-light);
+}
+
+.document-styler-button:active {
+    transform: translateY(1px);
+}
+
+.document-styler-button.primary {
+    background-color: var(--b3-theme-primary);
+    color: var(--b3-theme-on-primary);
+    border-color: var(--b3-theme-primary);
+}
+
+.document-styler-button.primary:hover {
+    background-color: var(--b3-theme-primary-light);
+    border-color: var(--b3-theme-primary-light);
+}
+
+/* 输入框样式 */
+.document-styler-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: var(--b3-border-radius);
+    background-color: var(--b3-theme-surface);
+    color: var(--b3-theme-on-surface);
+    font-size: 13px;
+    transition: border-color 0.2s ease;
+}
+
+.document-styler-input:focus {
+    outline: none;
+    border-color: var(--b3-theme-primary);
+    box-shadow: 0 0 0 2px var(--b3-theme-primary-lighter);
+}
+
+/* 分隔线 */
+.document-styler-divider {
+    height: 1px;
+    background-color: var(--b3-theme-surface-lighter);
+    margin: 16px 0;
+}

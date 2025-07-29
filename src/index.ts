@@ -1,899 +1,947 @@
-import {
-    Plugin,
-    showMessage,
-    confirm,
-    Dialog,
-    Menu,
-    openTab,
-    adaptHotkey,
-    getFrontend,
-    getBackend,
-    IModel,
-    Protyle,
-    openWindow,
-    IOperation,
-    Constants,
-    openMobileFileById,
-    lockScreen,
-    ICard,
-    ICardData,
-    fetchPost
-} from "siyuan";
-import "@/index.scss";
+import { Plugin } from "siyuan";
+import { App } from "siyuan";
+import { Custom } from "siyuan";
 
+// 导入核心组件
+import { SettingsManager } from "./core/SettingsManager";
+import { DocumentManager } from "./core/DocumentManager";
+import { HeadingNumbering } from "./core/HeadingNumbering";
+import { CrossReference } from "./core/CrossReference";
+import { FontStyleManager } from "./core/FontStyleManager";
+import { DockPanel } from "./ui/DockPanel";
+import { StyleManager } from "./ui/StyleManager";
+import { IPluginOptions, IDocumentStylerSettings, IDocumentInfo } from "./types";
 
-import { SettingUtils } from "./libs/setting-utils";
-const STORAGE_NAME = "menu-config";
-const TAB_TYPE = "custom_tab";
-const DOCK_TYPE = "dock_tab";
+/**
+ * Built-in plugin: Document Styler
+ * 提供文档样式设置的侧边栏面板，包括：
+ * - 标题自动编号与高级格式化选项
+ * - 图片/表格交叉引用与标题标签
+ * - 实时更新与可自定义编号格式
+ */
+export class DocumentStylerPlugin extends Plugin {
+    private appRef: App;
 
-export default class PluginSample extends Plugin {
+    // 核心组件 - 简化架构，只保留必要的模块
+    private settingsManager: SettingsManager;
+    private documentManager: DocumentManager;
+    private headingNumbering: HeadingNumbering;
+    private crossReference: CrossReference;
+    private fontStyleManager: FontStyleManager;
+    private styleManager: StyleManager;
+    private dockPanel: DockPanel;
 
-    customTab: () => IModel;
-    private isMobile: boolean;
-    private blockIconEventBindThis = this.blockIconEvent.bind(this);
-    private settingUtils: SettingUtils;
+    // 事件监听器管理
+    private eventListeners: Map<string, Function> = new Map();
+    private currentDocId: string | null = null;
 
-    async onload() {
-        this.data[STORAGE_NAME] = { readonlyText: "Readonly" };
+    // 活跃的protyle跟踪 - 用于管理样式清理
+    private activeProtyles: Set<string> = new Set();
 
-        console.log("loading plugin-sample", this.i18n);
+    // 防重复处理
+    private lastSwitchTime = 0;
+    private switchDebounceDelay = 300; // 300ms防抖
 
-        const frontEnd = getFrontend();
-        this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
-        // 图标的制作参见帮助文档
-        this.addIcons(`<symbol id="iconFace" viewBox="0 0 32 32">
-<path d="M13.667 17.333c0 0.92-0.747 1.667-1.667 1.667s-1.667-0.747-1.667-1.667 0.747-1.667 1.667-1.667 1.667 0.747 1.667 1.667zM20 15.667c-0.92 0-1.667 0.747-1.667 1.667s0.747 1.667 1.667 1.667 1.667-0.747 1.667-1.667-0.747-1.667-1.667-1.667zM29.333 16c0 7.36-5.973 13.333-13.333 13.333s-13.333-5.973-13.333-13.333 5.973-13.333 13.333-13.333 13.333 5.973 13.333 13.333zM14.213 5.493c1.867 3.093 5.253 5.173 9.12 5.173 0.613 0 1.213-0.067 1.787-0.16-1.867-3.093-5.253-5.173-9.12-5.173-0.613 0-1.213 0.067-1.787 0.16zM5.893 12.627c2.28-1.293 4.040-3.4 4.88-5.92-2.28 1.293-4.040 3.4-4.88 5.92zM26.667 16c0-1.040-0.16-2.040-0.44-2.987-0.933 0.2-1.893 0.32-2.893 0.32-4.173 0-7.893-1.92-10.347-4.92-1.4 3.413-4.187 6.093-7.653 7.4 0.013 0.053 0 0.12 0 0.187 0 5.88 4.787 10.667 10.667 10.667s10.667-4.787 10.667-10.667z"></path>
-</symbol>
-<symbol id="iconSaving" viewBox="0 0 32 32">
-<path d="M20 13.333c0-0.733 0.6-1.333 1.333-1.333s1.333 0.6 1.333 1.333c0 0.733-0.6 1.333-1.333 1.333s-1.333-0.6-1.333-1.333zM10.667 12h6.667v-2.667h-6.667v2.667zM29.333 10v9.293l-3.76 1.253-2.24 7.453h-7.333v-2.667h-2.667v2.667h-7.333c0 0-3.333-11.28-3.333-15.333s3.28-7.333 7.333-7.333h6.667c1.213-1.613 3.147-2.667 5.333-2.667 1.107 0 2 0.893 2 2 0 0.28-0.053 0.533-0.16 0.773-0.187 0.453-0.347 0.973-0.427 1.533l3.027 3.027h2.893zM26.667 12.667h-1.333l-4.667-4.667c0-0.867 0.12-1.72 0.347-2.547-1.293 0.333-2.347 1.293-2.787 2.547h-8.227c-2.573 0-4.667 2.093-4.667 4.667 0 2.507 1.627 8.867 2.68 12.667h2.653v-2.667h8v2.667h2.68l2.067-6.867 3.253-1.093v-4.707z"></path>
-</symbol>`);
+    constructor(options: IPluginOptions) {
+        super(options);
+        this.appRef = options.app;
 
-        const topBarElement = this.addTopBar({
-            icon: "iconFace",
-            title: this.i18n.addTopBarIcon,
-            position: "right",
-            callback: () => {
-                if (this.isMobile) {
-                    this.addMenu();
-                } else {
-                    let rect = topBarElement.getBoundingClientRect();
-                    // 如果被隐藏，则使用更多按钮
-                    if (rect.width === 0) {
-                        rect = document.querySelector("#barMore").getBoundingClientRect();
+        // 将插件实例暴露到全局，供HTML onclick使用
+        (window as any).documentStylerPlugin = this;
+
+        // 注册斜杠命令
+        this.registerSlashCommands();
+
+        // 初始化核心组件 - 简化依赖关系
+        this.initializeComponents();
+    }
+
+    /**
+     * 注册斜杠命令
+     */
+    private registerSlashCommands(): void {
+        // 注册交叉引用斜杠命令
+        this.protyleSlash.push({
+            filter: ["cross-reference", "cross reference", "交叉引用", "jiaochayinyong", "jcyy", "图表引用", "tubiaoyinyong", "tbyy"],
+            html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconRef"></use></svg><span class="b3-list-item__text">交叉引用</span></div>`,
+            id: "crossReference",
+            callback: ({ protyle }, nodeElement) => {
+                this.handleCrossReferenceSlash(protyle, nodeElement);
+            }
+        });
+    }
+
+    /**
+     * 初始化核心组件
+     */
+    private initializeComponents(): void {
+        // 按依赖顺序创建组件
+        this.settingsManager = new SettingsManager(this);
+        this.documentManager = new DocumentManager(this.appRef);
+        this.fontStyleManager = new FontStyleManager(this.settingsManager);
+        this.styleManager = new StyleManager();
+
+        // 功能组件
+        this.headingNumbering = new HeadingNumbering(
+            this.settingsManager,
+            this.documentManager,
+            this.styleManager
+        );
+        this.crossReference = new CrossReference(this.documentManager);
+        this.crossReference.setSettingsManager(this.settingsManager);
+
+        // UI组件
+        this.dockPanel = new DockPanel(
+            this.settingsManager,
+            this.documentManager,
+            this.crossReference,
+            this
+        );
+
+        // 设置交叉引用的面板更新回调
+        this.crossReference.setPanelUpdateCallback(async () => {
+            await this.dockPanel.updatePanel();
+        });
+    }
+
+    /**
+     * 插件加载时调用
+     */
+    async onload(): Promise<void> {
+        try {
+            // 初始化所有组件
+            await this.initializeAllComponents();
+
+            // 绑定事件监听器
+            this.bindEvents();
+
+            // 注册侧边栏面板
+            this.registerDockPanel();
+
+            console.log('DocumentStyler plugin loaded successfully');
+        } catch (error) {
+            console.error('DocumentStyler plugin failed to load:', error);
+        }
+    }
+
+    /**
+     * 插件卸载时调用
+     */
+    async onunload(): Promise<void> {
+        try {
+            // 解绑事件监听器
+            this.unbindEvents();
+
+            // 销毁所有组件
+            this.destroyAllComponents();
+
+            // 清理全局引用
+            delete (window as any).documentStylerPlugin;
+
+            console.log('DocumentStyler plugin unloaded successfully');
+        } catch (error) {
+            console.error('DocumentStyler plugin failed to unload:', error);
+        }
+    }
+
+    /**
+     * 初始化所有组件
+     */
+    private async initializeAllComponents(): Promise<void> {
+        // 按依赖顺序初始化组件
+        await this.settingsManager.init();
+        await this.documentManager.init();
+        await this.fontStyleManager.init();
+        await this.styleManager.init();
+        await this.headingNumbering.init();
+        await this.crossReference.init();
+        await this.dockPanel.init();
+    }
+
+    /**
+     * 销毁所有组件
+     */
+    private destroyAllComponents(): void {
+        // 按相反顺序销毁组件
+        this.dockPanel?.destroy();
+        this.crossReference?.destroy();
+        this.headingNumbering?.destroy();
+        this.styleManager?.destroy();
+        this.fontStyleManager?.destroy();
+        this.documentManager?.destroy();
+        this.settingsManager?.destroy();
+    }
+
+    /**
+     * 绑定事件监听器 - 合并EventHandler的功能
+     */
+    private bindEvents(): void {
+        // 文档切换事件
+        const onDocumentSwitch = this.onDocumentSwitch.bind(this);
+        this.eventBus.on("switch-protyle", onDocumentSwitch);
+        this.eventListeners.set("switch-protyle", onDocumentSwitch);
+
+        // 文档加载事件
+        const onDocumentLoaded = this.onDocumentLoaded.bind(this);
+        this.eventBus.on("loaded-protyle-static", onDocumentLoaded);
+        this.eventListeners.set("loaded-protyle-static", onDocumentLoaded);
+
+        // 文档销毁事件
+        const onDocumentDestroy = this.onDocumentDestroy.bind(this);
+        this.eventBus.on("destroy-protyle", onDocumentDestroy);
+        this.eventListeners.set("destroy-protyle", onDocumentDestroy);
+
+        // WebSocket 事件监听 - 简化版本
+        this.setupWebSocketListener();
+    }
+
+    /**
+     * 解绑事件监听器
+     */
+    private unbindEvents(): void {
+        // 移除所有事件监听器
+        for (const [eventName, listener] of this.eventListeners) {
+            this.eventBus.off(eventName as any, listener as any);
+        }
+        this.eventListeners.clear();
+    }
+
+    /**
+     * 设置WebSocket监听器 - 简化版本，只监听必要事件
+     */
+    private setupWebSocketListener(): void {
+        if (window.siyuan?.ws?.ws) {
+            const originalOnMessage = window.siyuan.ws.ws.onmessage;
+            window.siyuan.ws.ws.onmessage = (event) => {
+                // 先调用原始处理器
+                if (originalOnMessage) {
+                    originalOnMessage.call(window.siyuan.ws.ws, event);
+                }
+
+                // 处理我们关心的事件
+                this.handleWebSocketMessage(event);
+            };
+        }
+    }
+
+    /**
+     * 添加文档ID到protyle元素
+     * @param protyle 编辑器实例
+     * @param docId 文档ID
+     */
+    private addDocIdToProtyle(protyle: any, docId: string): void {
+        try {
+            if (protyle && protyle.element) {
+                // 添加data-doc-id属性到protyle元素
+                protyle.element.setAttribute('data-doc-id', docId);
+
+                // 也添加到wysiwyg元素上，以便CSS选择器能够正确匹配
+                if (protyle.wysiwyg && protyle.wysiwyg.element) {
+                    protyle.wysiwyg.element.setAttribute('data-doc-id', docId);
+                }
+
+                console.log(`DocumentStyler: 已为文档 ${docId} 添加data-doc-id属性`);
+            }
+        } catch (error) {
+            console.error('DocumentStyler: 添加data-doc-id属性失败:', error);
+        }
+    }
+
+    /**
+     * 文档切换事件处理
+     */
+    private async onDocumentSwitch(event: CustomEvent): Promise<void> {
+        try {
+            const protyle = event.detail?.protyle;
+            if (!protyle?.block?.rootID) return;
+
+            const newDocId = protyle.block.rootID;
+            const now = Date.now();
+
+            // 检查是否是同一个文档
+            if (this.currentDocId === newDocId) return;
+
+            // 立即更新文档ID，确保后续操作使用正确的ID
+            this.currentDocId = newDocId;
+            this.documentManager.updateCurrentDocument(protyle);
+
+            // 添加data-doc-id属性到protyle元素上
+            this.addDocIdToProtyle(protyle, newDocId);
+
+            // 跟踪活跃的protyle
+            this.activeProtyles.add(newDocId);
+
+            // 防抖处理，避免短时间内重复的完整处理流程
+            if (now - this.lastSwitchTime < this.switchDebounceDelay) {
+                console.log(`DocumentStyler: 快速切换到文档 ${newDocId}，仅更新ID，跳过完整处理`);
+                // 仍然需要更新面板以显示正确的文档信息
+                await this.dockPanel.updatePanel();
+                return;
+            }
+
+            this.lastSwitchTime = now;
+            console.log(`DocumentStyler: 完整处理文档切换到 ${newDocId}`);
+
+            // 更新面板
+            await this.dockPanel.updatePanel();
+
+            // 应用当前文档的设置
+            await this.applyCurrentDocumentSettings();
+
+            // 延迟检查是否需要更新交叉引用（防止WebSocket消息处理的竞争条件）
+            setTimeout(async () => {
+                try {
+                    const docSettings = await this.settingsManager.getDocumentSettings(newDocId);
+                    if (docSettings.crossReferenceEnabled) {
+                        const protyle = this.documentManager.getCurrentProtyle();
+                        if (protyle) {
+                            console.log('DocumentStyler: 文档切换后延迟检查交叉引用更新');
+                            await this.crossReference.applyCrossReference(protyle);
+                        }
                     }
-                    if (rect.width === 0) {
-                        rect = document.querySelector("#barPlugins").getBoundingClientRect();
-                    }
-                    this.addMenu(rect);
+                } catch (error) {
+                    console.error('DocumentStyler: 延迟更新交叉引用失败:', error);
                 }
+            }, 500); // 500ms延迟，确保DOM更新完成
+        } catch (error) {
+            console.error('DocumentStyler: 文档切换处理失败:', error);
+        }
+    }
+
+    /**
+     * 文档加载事件处理
+     */
+    private async onDocumentLoaded(event: CustomEvent): Promise<void> {
+        try {
+            const protyle = event.detail?.protyle;
+            if (!protyle?.block?.rootID) return;
+
+            const docId = protyle.block.rootID;
+            this.currentDocId = docId;
+            this.documentManager.updateCurrentDocument(protyle);
+
+            // 添加data-doc-id属性到protyle元素上
+            this.addDocIdToProtyle(protyle, docId);
+
+            // 跟踪活跃的protyle
+            this.activeProtyles.add(docId);
+
+            // 应用当前文档的设置
+            await this.applyCurrentDocumentSettings();
+        } catch (error) {
+            console.error('DocumentStyler: 文档加载处理失败:', error);
+        }
+    }
+
+    /**
+     * 文档销毁事件处理
+     */
+    private async onDocumentDestroy(event: CustomEvent): Promise<void> {
+        try {
+            const protyle = event.detail?.protyle;
+            if (!protyle?.block?.rootID) return;
+
+            const docId = protyle.block.rootID;
+            console.log(`DocumentStyler: 处理文档销毁事件 - ${docId}`);
+
+            // 从活跃protyle集合中移除
+            this.activeProtyles.delete(docId);
+
+            // 检查是否还有其他protyle在使用样式
+            const hasActiveProtyles = this.activeProtyles.size > 0;
+
+            if (!hasActiveProtyles) {
+                // 如果没有活跃的protyle了，清理所有样式
+                console.log('DocumentStyler: 没有活跃的protyle，清理所有样式');
+                await this.headingNumbering.clearNumbering(null);
+                await this.crossReference.clearCrossReference(protyle);
+                await this.fontStyleManager.clearAllStyles();
+            } else {
+                console.log(`DocumentStyler: 还有 ${this.activeProtyles.size} 个活跃的protyle，保留样式`);
             }
-        });
+        } catch (error) {
+            console.error('DocumentStyler: 文档销毁处理失败:', error);
+        }
+    }
 
-        const statusIconTemp = document.createElement("template");
-        statusIconTemp.innerHTML = `<div class="toolbar__item ariaLabel" aria-label="Remove plugin-sample Data">
-    <svg>
-        <use xlink:href="#iconTrashcan"></use>
-    </svg>
-</div>`;
-        statusIconTemp.content.firstElementChild.addEventListener("click", () => {
-            confirm("⚠️", this.i18n.confirmRemove.replace("${name}", this.name), () => {
-                this.removeData(STORAGE_NAME).then(() => {
-                    this.data[STORAGE_NAME] = { readonlyText: "Readonly" };
-                    showMessage(`[${this.name}]: ${this.i18n.removedData}`);
-                });
-            });
-        });
-        this.addStatusBar({
-            element: statusIconTemp.content.firstElementChild as HTMLElement,
-        });
+    /**
+     * WebSocket消息处理 - 智能版本，使用组件的专门处理器
+     */
+    private async handleWebSocketMessage(event: MessageEvent): Promise<void> {
+        try {
+            const data = JSON.parse(event.data);
 
-        this.customTab = this.addTab({
-            type: TAB_TYPE,
-            init() {
-                this.element.innerHTML = '<p>Hello</p>'
-            }
-        });
-
-        this.addCommand({
-            langKey: "showDialog",
-            hotkey: "⇧⌘O",
-            callback: () => {
-                this.showDialog();
-            },
-            fileTreeCallback: (file: any) => {
-                console.log(file, "fileTreeCallback");
-            },
-            editorCallback: (protyle: any) => {
-                console.log(protyle, "editorCallback");
-            },
-            dockCallback: (element: HTMLElement) => {
-                console.log(element, "dockCallback");
-            },
-        });
-        this.addCommand({
-            langKey: "getTab",
-            hotkey: "⇧⌘M",
-            globalCallback: () => {
-                console.log(this.getOpenedTab());
-            },
-        });
-
-        this.addDock({
-            config: {
-                position: "LeftBottom",
-                size: { width: 200, height: 0 },
-                icon: "iconSaving",
-                title: "Custom Dock",
-                hotkey: "⌥⌘W",
-            },
-            data: {
-                text: "This is my custom dock"
-            },
-            type: DOCK_TYPE,
-            resize() {
-                console.log(DOCK_TYPE + " resize");
-            },
-            update() {
-                console.log(DOCK_TYPE + " update");
-            },
-            init: (dock) => {
-                if (this.isMobile) {
-                    dock.element.innerHTML = `<div class="toolbar toolbar--border toolbar--dark">
-                    <svg class="toolbar__icon"><use xlink:href="#iconEmoji"></use></svg>
-                        <div class="toolbar__text">Custom Dock</div>
-                    </div>
-                    <div class="fn__flex-1 plugin-sample__custom-dock">
-                        ${dock.data.text}
-                    </div>
-                    </div>`;
+            // 只处理transactions事件，用于实时更新
+            if (data.cmd === 'transactions') {
+                if (this.currentDocId) {
+                    console.log(`DocumentStyler: 收到WebSocket transactions消息，当前文档ID: ${this.currentDocId}`);
+                    // 使用组件的专门处理器进行更精细的分析
+                    await this.headingNumbering.handleTransactionMessage(data);
+                    await this.crossReference.handleTransactionMessage(data);
                 } else {
-                    dock.element.innerHTML = `<div class="fn__flex-1 fn__flex-column">
-                    <div class="block__icons">
-                        <div class="block__logo">
-                            <svg class="block__logoicon"><use xlink:href="#iconEmoji"></use></svg>
-                            Custom Dock
-                        </div>
-                        <span class="fn__flex-1 fn__space"></span>
-                        <span data-type="min" class="block__icon b3-tooltips b3-tooltips__sw" aria-label="Min ${adaptHotkey("⌘W")}"><svg class="block__logoicon"><use xlink:href="#iconMin"></use></svg></span>
-                    </div>
-                    <div class="fn__flex-1 plugin-sample__custom-dock">
-                        ${dock.data.text}
-                    </div>
-                    </div>`;
+                    console.log('DocumentStyler: 收到WebSocket transactions消息，但当前文档ID为空，跳过处理');
                 }
-            },
-            destroy() {
-                console.log("destroy dock:", DOCK_TYPE);
             }
-        });
+        } catch (error) {
+            // 忽略解析错误，不是所有WebSocket消息都是JSON
+        }
+    }
 
-        this.settingUtils = new SettingUtils({
-            plugin: this, name: STORAGE_NAME
-        });
-        this.settingUtils.addItem({
-            key: "Input",
-            value: "",
-            type: "textinput",
-            title: "Readonly text",
-            description: "Input description",
-            action: {
-                // Called when focus is lost and content changes
-                callback: () => {
-                    // Return data and save it in real time
-                    let value = this.settingUtils.takeAndSave("Input");
-                    console.log(value);
-                }
-            }
-        });
-        this.settingUtils.addItem({
-            key: "InputArea",
-            value: "",
-            type: "textarea",
-            title: "Readonly text",
-            description: "Input description",
-            // Called when focus is lost and content changes
-            action: {
-                callback: () => {
-                    // Read data in real time
-                    let value = this.settingUtils.get("InputArea");
-                    console.log(value);
-                }
-            }
-        });
-        this.settingUtils.addItem({
-            key: "Check",
-            value: true,
-            type: "checkbox",
-            title: "Checkbox text",
-            description: "Check description",
-            action: {
-                callback: () => {
-                    // Return data and save it in real time
-                    let value = !this.settingUtils.get("Check");
-                    this.settingUtils.set("Check", value);
-                    console.log(value);
-                }
-            }
-        });
-        this.settingUtils.addItem({
-            key: "Select",
-            value: 1,
-            type: "select",
-            title: "Select",
-            description: "Select description",
-            options: {
-                1: "Option 1",
-                2: "Option 2"
-            },
-            action: {
-                callback: () => {
-                    // Read data in real time
-                    let value = this.settingUtils.get("Select");
-                    console.log(value);
-                }
-            }
-        });
-        this.settingUtils.addItem({
-            key: "Slider",
-            value: 50,
-            type: "slider",
-            title: "Slider text",
-            description: "Slider description",
-            direction: "column",
-            slider: {
-                min: 0,
-                max: 100,
-                step: 1,
-            },
-            action:{
-                callback: () => {
-                    // Read data in real time
-                    let value = this.settingUtils.take("Slider");
-                    console.log(value);
-                }
-            }
-        });
-        this.settingUtils.addItem({
-            key: "Btn",
-            value: "",
-            type: "button",
-            title: "Button",
-            description: "Button description",
-            button: {
-                label: "Button",
-                callback: () => {
-                    showMessage("Button clicked");
-                }
-            }
-        });
-        this.settingUtils.addItem({
-            key: "Custom Element",
-            value: "",
-            type: "custom",
-            direction: "row",
-            title: "Custom Element",
-            description: "Custom Element description",
-            //Any custom element must offer the following methods
-            createElement: (currentVal: any) => {
-                let div = document.createElement('div');
-                div.style.border = "1px solid var(--b3-theme-primary)";
-                div.contentEditable = "true";
-                div.textContent = currentVal;
-                return div;
-            },
-            getEleVal: (ele: HTMLElement) => {
-                return ele.textContent;
-            },
-            setEleVal: (ele: HTMLElement, val: any) => {
-                ele.textContent = val;
-            }
-        });
-        this.settingUtils.addItem({
-            key: "Hint",
-            value: "",
-            type: "hint",
-            title: this.i18n.hintTitle,
-            description: this.i18n.hintDesc,
-        });
+
+
+    /**
+     * 应用当前文档的设置
+     */
+    private async applyCurrentDocumentSettings(): Promise<void> {
+        if (!this.currentDocId) return;
 
         try {
-            this.settingUtils.load();
+            const docSettings = await this.settingsManager.getDocumentSettings(this.currentDocId);
+
+            // 应用标题编号 - 不清理，只应用当前文档的样式
+            if (docSettings.headingNumberingEnabled) {
+                await this.headingNumbering.updateNumberingForDoc(this.currentDocId);
+            }
+            // 注意：不在这里清理标题编号，因为其他protyle可能还在使用
+
+            // 应用交叉引用 - 不清理，只应用当前文档的样式
+            if (docSettings.crossReferenceEnabled) {
+                const protyle = this.documentManager.getCurrentProtyle();
+                if (protyle) {
+                    await this.crossReference.applyCrossReference(protyle);
+                }
+            }
+            // 注意：不在这里清理交叉引用，因为其他protyle可能还在使用
+
+            // 应用字体设置
+            await this.fontStyleManager.applyFontStyles(this.currentDocId, docSettings.fontSettings);
         } catch (error) {
-            console.error("Error loading settings storage, probably empty config json:", error);
+            console.error('DocumentStyler: 应用文档设置失败:', error);
+        }
+    }
+
+    /**
+     * 注册侧边栏面板
+     */
+    private registerDockPanel(): void {
+        this.addDock({
+            config: {
+                position: "RightTop",
+                size: { width: 320, height: 450 },
+                icon: "iconEdit",
+                title: "文档样式设置",
+                show: false,
+                index: 100
+            },
+            data: {},
+            type: "document-styler-dock",
+            init: (custom: Custom) => this.initDockPanel(custom),
+            update: () => this.updateDockPanel(),
+            destroy: () => this.destroyDockPanel()
+        });
+    }
+
+    /**
+     * 初始化侧边栏面板
+     */
+    private async initDockPanel(custom: Custom): Promise<void> {
+        await this.dockPanel.initPanel(custom);
+    }
+
+    /**
+     * 更新侧边栏面板
+     */
+    private async updateDockPanel(): Promise<void> {
+        await this.dockPanel.updatePanel();
+    }
+
+    /**
+     * 销毁侧边栏面板
+     */
+    private destroyDockPanel(): void {
+        // 面板销毁逻辑由 dockPanel 模块处理
+    }
+
+    // ==================== 公共方法 ====================
+
+    /**
+     * 滚动到指定图片/表格（供HTML onclick调用）
+     * @param figureId 图片/表格ID
+     */
+    public scrollToFigure(figureId: string): void {
+        this.crossReference.scrollToFigure(figureId);
+    }
+
+    /**
+     * 切换当前文档的标题编号状态
+     */
+    public async toggleHeadingNumbering(): Promise<void> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
+
+        try {
+            const currentEnabled = await this.settingsManager.isDocumentHeadingNumberingEnabled(docId);
+
+            if (currentEnabled) {
+                // 关闭编号
+                await this.headingNumbering.clearNumbering(null);
+                await this.settingsManager.setDocumentHeadingNumberingEnabled(docId, false);
+            } else {
+                // 开启编号
+                await this.headingNumbering.updateNumberingForDoc(docId);
+                await this.settingsManager.setDocumentHeadingNumberingEnabled(docId, true);
+            }
+
+            // 更新面板
+            this.dockPanel.updatePanel();
+        } catch (error) {
+            console.error('切换标题编号失败:', error);
+        }
+    }
+
+    /**
+     * 切换当前文档的交叉引用状态
+     */
+    public async toggleCrossReference(): Promise<void> {
+        const settings = this.settingsManager.getSettings();
+        const protyle = this.documentManager.getCurrentProtyle();
+
+        if (!protyle) return;
+
+        try {
+            if (settings.crossReference) {
+                await this.crossReference.clearCrossReference(protyle);
+                await this.settingsManager.updateSettings({ crossReference: false });
+            } else {
+                await this.crossReference.applyCrossReference(protyle);
+                await this.settingsManager.updateSettings({ crossReference: true });
+            }
+
+            // 更新面板
+            this.dockPanel.updatePanel();
+        } catch (error) {
+            console.error('切换交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 获取当前设置
+     */
+    public getSettings(): IDocumentStylerSettings {
+        return this.settingsManager.getSettings();
+    }
+
+    /**
+     * 获取当前文档的编号启用状态
+     */
+    public async getCurrentDocumentNumberingStatus(): Promise<{
+        headingNumbering: boolean;
+        crossReference: boolean;
+    }> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) {
+            return {
+                headingNumbering: false,
+                crossReference: false
+            };
         }
 
+        try {
+            const headingNumbering = await this.settingsManager.isDocumentHeadingNumberingEnabled(docId);
+            const crossReference = await this.settingsManager.isDocumentCrossReferenceEnabled(docId);
 
-        this.protyleSlash = [{
-            filter: ["insert emoji 😊", "插入表情 😊", "crbqwx"],
-            html: `<div class="b3-list-item__first"><span class="b3-list-item__text">${this.i18n.insertEmoji}</span><span class="b3-list-item__meta">😊</span></div>`,
-            id: "insertEmoji",
-            callback(protyle: Protyle) {
-                protyle.insert("😊");
+            return {
+                headingNumbering,
+                crossReference
+            };
+        } catch (error) {
+            console.error('获取文档编号状态失败:', error);
+            return {
+                headingNumbering: false,
+                crossReference: false
+            };
+        }
+    }
+
+    /**
+     * 更新设置
+     */
+    public async updateSettings(settings: Partial<IDocumentStylerSettings>): Promise<void> {
+        await this.settingsManager.updateSettings(settings);
+        this.dockPanel.updatePanel();
+    }
+
+    /**
+     * 获取当前文档信息
+     */
+    public async getCurrentDocumentInfo(): Promise<IDocumentInfo | null> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return null;
+        return await this.documentManager.getDocumentInfo(docId);
+    }
+
+    /**
+     * 应用标题编号（供DockPanel调用）
+     */
+    public async applyHeadingNumbering(): Promise<void> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
+
+        try {
+            console.log('DocumentStyler: 开始应用标题编号');
+
+            // 获取文档设置
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            console.log('DocumentStyler: 文档设置获取成功', docSettings);
+
+            // 使用文档的设置更新编号
+            await this.headingNumbering.updateNumberingForDoc(docId);
+            console.log('DocumentStyler: 标题编号应用完成');
+        } catch (error) {
+            console.error('应用标题编号失败:', error);
+        }
+    }
+
+    /**
+     * 清除标题编号（供DockPanel调用）
+     */
+    public async clearHeadingNumbering(): Promise<void> {
+        try {
+            await this.headingNumbering.clearNumbering(null);
+        } catch (error) {
+            console.error('清除标题编号失败:', error);
+        }
+    }
+
+    /**
+     * 应用交叉引用（供DockPanel调用）
+     */
+    public async applyCrossReference(): Promise<void> {
+        const protyle = this.documentManager.getCurrentProtyle();
+        if (!protyle) return;
+
+        try {
+            await this.crossReference.applyCrossReference(protyle);
+        } catch (error) {
+            console.error('应用交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 清除交叉引用（供DockPanel调用）
+     */
+    public async clearCrossReference(): Promise<void> {
+        const protyle = this.documentManager.getCurrentProtyle();
+        if (!protyle) return;
+
+        try {
+            await this.crossReference.clearCrossReference(protyle);
+        } catch (error) {
+            console.error('清除交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 手动触发交叉引用更新（供调试使用）
+     */
+    public async forceUpdateCrossReference(): Promise<void> {
+        try {
+            await this.crossReference.forceUpdate();
+        } catch (error) {
+            console.error('手动更新交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 应用字体设置（供DockPanel调用）
+     */
+    public async applyFontSettings(): Promise<void> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
+
+        try {
+            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            await this.fontStyleManager.applyFontStyles(docId, docSettings.fontSettings);
+            console.log('DocumentStyler: 字体设置应用完成');
+        } catch (error) {
+            console.error('应用字体设置失败:', error);
+        }
+    }
+
+    /**
+     * 清除字体设置（供DockPanel调用）
+     */
+    public async clearFontSettings(): Promise<void> {
+        const docId = this.documentManager.getCurrentDocId();
+        if (!docId) return;
+
+        try {
+            await this.fontStyleManager.clearDocumentStyles(docId);
+            console.log('DocumentStyler: 字体设置清除完成');
+        } catch (error) {
+            console.error('清除字体设置失败:', error);
+        }
+    }
+
+    /**
+     * 获取字体样式管理器（供DockPanel调用）
+     */
+    public getFontStyleManager(): FontStyleManager {
+        return this.fontStyleManager;
+    }
+
+    /**
+     * 处理交叉引用斜杠命令
+     * @param protyle 编辑器实例
+     * @param nodeElement 节点元素
+     */
+    private async handleCrossReferenceSlash(protyle: any, nodeElement: HTMLElement): Promise<void> {
+        try {
+            // 获取当前文档ID
+            const docId = protyle?.block?.rootID;
+            if (!docId) {
+                console.warn('无法获取当前文档ID');
+                return;
             }
-        }];
 
-        this.protyleOptions = {
-            toolbar: ["block-ref",
-                "a",
-                "|",
-                "text",
-                "strong",
-                "em",
-                "u",
-                "s",
-                "mark",
-                "sup",
-                "sub",
-                "clear",
-                "|",
-                "code",
-                "kbd",
-                "tag",
-                "inline-math",
-                "inline-memo",
-                "|",
-                {
-                    name: "insert-smail-emoji",
-                    icon: "iconEmoji",
-                    hotkey: "⇧⌘I",
-                    tipPosition: "n",
-                    tip: this.i18n.insertEmoji,
-                    click(protyle: Protyle) {
-                        protyle.insert("😊");
-                    }
-                }],
+            // 获取图表数据
+            const figures = await this.crossReference.getFiguresList(docId);
+
+            // 显示图表选择菜单
+            this.showCrossReferenceMenu(protyle, nodeElement, figures);
+        } catch (error) {
+            console.error('处理交叉引用斜杠命令失败:', error);
+        }
+    }
+
+    /**
+     * 显示交叉引用选择菜单
+     * @param protyle 编辑器实例
+     * @param nodeElement 节点元素
+     * @param figures 图表数据
+     */
+    private showCrossReferenceMenu(protyle: any, nodeElement: HTMLElement, figures: any[]): void {
+        // 获取光标位置
+        const range = protyle.toolbar.range;
+        if (!range) return;
+
+        const rangePosition = this.getSelectionPosition(nodeElement, range);
+        const menuPosition = {
+            x: rangePosition.left,
+            y: rangePosition.top + 26
         };
 
-        console.log(this.i18n.helloPlugin);
-    }
-
-    onLayoutReady() {
-        // this.loadData(STORAGE_NAME);
-        this.settingUtils.load();
-        console.log(`frontend: ${getFrontend()}; backend: ${getBackend()}`);
-        console.log(
-            "Official settings value calling example:\n" +
-            this.settingUtils.get("InputArea") + "\n" +
-            this.settingUtils.get("Slider") + "\n" +
-            this.settingUtils.get("Select") + "\n"
-        );
-    }
-
-    async onunload() {
-        console.log(this.i18n.byePlugin);
-        showMessage("Goodbye SiYuan Plugin");
-        console.log("onunload");
-    }
-
-    uninstall() {
-        console.log("uninstall");
-    }
-
-    async updateCards(options: ICardData) {
-        options.cards.sort((a: ICard, b: ICard) => {
-            if (a.blockID < b.blockID) {
-                return -1;
-            }
-            if (a.blockID > b.blockID) {
-                return 1;
-            }
-            return 0;
-        });
-        return options;
-    }
-
-    private eventBusPaste(event: any) {
-        // 如果需异步处理请调用 preventDefault， 否则会进行默认处理
-        event.preventDefault();
-        // 如果使用了 preventDefault，必须调用 resolve，否则程序会卡死
-        event.detail.resolve({
-            textPlain: event.detail.textPlain.trim(),
+        // 创建并显示菜单
+        this.createCrossReferenceMenu(figures, menuPosition, (figure) => {
+            // 插入交叉引用
+            this.insertCrossReference(protyle, figure);
         });
     }
 
-    private eventBusLog({ detail }: any) {
-        console.log(detail);
+    /**
+     * 获取选择位置
+     * @param _nodeElement 节点元素（未使用，保留以备将来扩展）
+     * @param range 选择范围
+     * @returns 位置信息
+     */
+    private getSelectionPosition(_nodeElement: HTMLElement, range: Range): { left: number; top: number } {
+        const rect = range.getBoundingClientRect();
+        return {
+            left: rect.left,
+            top: rect.top
+        };
     }
 
-    private blockIconEvent({ detail }: any) {
-        detail.menu.addItem({
-            iconHTML: "",
-            label: this.i18n.removeSpace,
-            click: () => {
-                const doOperations: IOperation[] = [];
-                detail.blockElements.forEach((item: HTMLElement) => {
-                    const editElement = item.querySelector('[contenteditable="true"]');
-                    if (editElement) {
-                        editElement.textContent = editElement.textContent.replace(/ /g, "");
-                        doOperations.push({
-                            id: item.dataset.nodeId,
-                            data: item.outerHTML,
-                            action: "update"
-                        });
-                    }
-                });
-                detail.protyle.getInstance().transaction(doOperations);
-            }
-        });
-    }
+    /**
+     * 创建交叉引用菜单
+     * @param figures 图表数据
+     * @param position 菜单位置
+     * @param onSelect 选择回调
+     */
+    private createCrossReferenceMenu(
+        figures: any[],
+        position: { x: number; y: number },
+        onSelect: (figure: any) => void
+    ): void {
+        // 移除已存在的菜单
+        const existingMenu = document.querySelector('.cross-reference-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
 
-    private showDialog() {
-        const dialog = new Dialog({
-            title: `SiYuan ${Constants.SIYUAN_VERSION}`,
-            content: `<div class="b3-dialog__content">
-    <div>appId:</div>
-    <div class="fn__hr"></div>
-    <div class="plugin-sample__time">${this.app?.appId}</div>
-    <div class="fn__hr"></div>
-    <div class="fn__hr"></div>
-    <div>API demo:</div>
-    <div class="fn__hr"></div>
-    <div class="plugin-sample__time">System current time: <span id="time"></span></div>
-    <div class="fn__hr"></div>
-    <div class="fn__hr"></div>
-    <div>Protyle demo:</div>
-    <div class="fn__hr"></div>
-    <div id="protyle" style="height: 360px;"></div>
-</div>`,
-            width: this.isMobile ? "92vw" : "560px",
-            height: "540px",
-        });
-        new Protyle(this.app, dialog.element.querySelector("#protyle"), {
-            blockId: "20200812220555-lj3enxa",
-        });
-        fetchPost("/api/system/currentTime", {}, (response) => {
-            dialog.element.querySelector("#time").innerHTML = new Date(response.data).toString();
-        });
-    }
+        // 创建菜单容器
+        const menuElement = document.createElement('div');
+        menuElement.className = 'b3-menu b3-list b3-list--background cross-reference-menu';
+        menuElement.style.position = 'fixed';
+        menuElement.style.left = `${position.x}px`;
+        menuElement.style.top = `${position.y}px`;
+        menuElement.style.zIndex = '9999';
+        menuElement.style.maxHeight = '300px';
+        menuElement.style.overflowY = 'auto';
+        menuElement.style.minWidth = '200px';
 
-    private addMenu(rect?: DOMRect) {
-        const menu = new Menu("topBarSample", () => {
-            console.log(this.i18n.byeMenu);
-        });
-        menu.addItem({
-            icon: "iconInfo",
-            label: "Dialog(open help first)",
-            accelerator: this.commands[0].customHotkey,
-            click: () => {
-                this.showDialog();
-            }
-        });
-        if (!this.isMobile) {
-            menu.addItem({
-                icon: "iconFace",
-                label: "Open Custom Tab",
-                click: () => {
-                    const tab = openTab({
-                        app: this.app,
-                        custom: {
-                            icon: "iconFace",
-                            title: "Custom Tab",
-                            data: {
-                                text: "This is my custom tab",
-                            },
-                            id: this.name + TAB_TYPE
-                        },
-                    });
-                    console.log(tab);
-                }
-            });
-            menu.addItem({
-                icon: "iconImage",
-                label: "Open Asset Tab(open help first)",
-                click: () => {
-                    const tab = openTab({
-                        app: this.app,
-                        asset: {
-                            path: "assets/paragraph-20210512165953-ag1nib4.svg"
-                        }
-                    });
-                    console.log(tab);
-                }
-            });
-            menu.addItem({
-                icon: "iconFile",
-                label: "Open Doc Tab(open help first)",
-                click: async () => {
-                    const tab = await openTab({
-                        app: this.app,
-                        doc: {
-                            id: "20200812220555-lj3enxa",
-                        }
-                    });
-                    console.log(tab);
-                }
-            });
-            menu.addItem({
-                icon: "iconSearch",
-                label: "Open Search Tab",
-                click: () => {
-                    const tab = openTab({
-                        app: this.app,
-                        search: {
-                            k: "SiYuan"
-                        }
-                    });
-                    console.log(tab);
-                }
-            });
-            menu.addItem({
-                icon: "iconRiffCard",
-                label: "Open Card Tab",
-                click: () => {
-                    const tab = openTab({
-                        app: this.app,
-                        card: {
-                            type: "all"
-                        }
-                    });
-                    console.log(tab);
-                }
-            });
-            menu.addItem({
-                icon: "iconLayout",
-                label: "Open Float Layer(open help first)",
-                click: () => {
-                    this.addFloatLayer({
-                        ids: ["20210428212840-8rqwn5o", "20201225220955-l154bn4"],
-                        defIds: ["20230415111858-vgohvf3", "20200813131152-0wk5akh"],
-                        x: window.innerWidth - 768 - 120,
-                        y: 32
-                    });
-                }
-            });
-            menu.addItem({
-                icon: "iconOpenWindow",
-                label: "Open Doc Window(open help first)",
-                click: () => {
-                    openWindow({
-                        doc: {id: "20200812220555-lj3enxa"}
-                    });
-                }
-            });
+        if (figures.length === 0) {
+            // 没有图表时显示提示
+            menuElement.innerHTML = `
+                <div class="b3-list-item b3-list-item--readonly">
+                    <span class="b3-list-item__text">当前文档中没有图片或表格</span>
+                </div>
+            `;
         } else {
-            menu.addItem({
-                icon: "iconFile",
-                label: "Open Doc(open help first)",
-                click: () => {
-                    openMobileFileById(this.app, "20200812220555-lj3enxa");
+            // 生成图表列表
+            const menuHTML = figures.map(figure => {
+                const typeText = figure.type === 'image' ? '图' : '表';
+                const iconName = figure.type === 'image' ? 'iconImage' : 'iconTable';
+                const displayText = `${typeText} ${figure.number}`;
+                const captionText = figure.caption ? `: ${figure.caption}` : '';
+
+                return `
+                    <div class="b3-list-item" data-figure-id="${figure.id}" data-figure-type="${figure.type}" data-figure-number="${figure.number}">
+                        <div style="display: flex; align-items: center;">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#${iconName}"></use>
+                            </svg>
+                            <span class="b3-list-item__text">${displayText}${captionText}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            menuElement.innerHTML = menuHTML;
+
+            // 添加点击事件监听
+            menuElement.addEventListener('click', (event: MouseEvent) => {
+                const target = event.target as HTMLElement;
+                const listItem = target.closest('.b3-list-item') as HTMLElement;
+
+                if (listItem && listItem.dataset.figureId) {
+                    const figure = {
+                        id: listItem.dataset.figureId,
+                        type: listItem.dataset.figureType,
+                        number: parseInt(listItem.dataset.figureNumber || '0')
+                    };
+
+                    onSelect(figure);
+                    menuElement.remove();
                 }
             });
         }
-        menu.addItem({
-            icon: "iconLock",
-            label: "Lockscreen",
-            click: () => {
-                lockScreen(this.app);
-            }
-        });
-        menu.addItem({
-            icon: "iconScrollHoriz",
-            label: "Event Bus",
-            type: "submenu",
-            submenu: [{
-                icon: "iconSelect",
-                label: "On ws-main",
-                click: () => {
-                    this.eventBus.on("ws-main", this.eventBusLog);
+
+        // 添加到页面
+        document.body.appendChild(menuElement);
+
+        // 添加全局点击事件监听，点击菜单外部时关闭菜单
+        setTimeout(() => {
+            document.addEventListener('click', (event: MouseEvent) => {
+                const target = event.target as HTMLElement;
+                if (!menuElement.contains(target)) {
+                    menuElement.remove();
                 }
-            }, {
-                icon: "iconClose",
-                label: "Off ws-main",
-                click: () => {
-                    this.eventBus.off("ws-main", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On click-blockicon",
-                click: () => {
-                    this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off click-blockicon",
-                click: () => {
-                    this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On click-pdf",
-                click: () => {
-                    this.eventBus.on("click-pdf", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off click-pdf",
-                click: () => {
-                    this.eventBus.off("click-pdf", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On click-editorcontent",
-                click: () => {
-                    this.eventBus.on("click-editorcontent", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off click-editorcontent",
-                click: () => {
-                    this.eventBus.off("click-editorcontent", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On click-editortitleicon",
-                click: () => {
-                    this.eventBus.on("click-editortitleicon", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off click-editortitleicon",
-                click: () => {
-                    this.eventBus.off("click-editortitleicon", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On click-flashcard-action",
-                click: () => {
-                    this.eventBus.on("click-flashcard-action", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off click-flashcard-action",
-                click: () => {
-                    this.eventBus.off("click-flashcard-action", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-noneditableblock",
-                click: () => {
-                    this.eventBus.on("open-noneditableblock", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-noneditableblock",
-                click: () => {
-                    this.eventBus.off("open-noneditableblock", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On loaded-protyle-static",
-                click: () => {
-                    this.eventBus.on("loaded-protyle-static", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off loaded-protyle-static",
-                click: () => {
-                    this.eventBus.off("loaded-protyle-static", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On loaded-protyle-dynamic",
-                click: () => {
-                    this.eventBus.on("loaded-protyle-dynamic", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off loaded-protyle-dynamic",
-                click: () => {
-                    this.eventBus.off("loaded-protyle-dynamic", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On switch-protyle",
-                click: () => {
-                    this.eventBus.on("switch-protyle", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off switch-protyle",
-                click: () => {
-                    this.eventBus.off("switch-protyle", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On destroy-protyle",
-                click: () => {
-                    this.eventBus.on("destroy-protyle", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off destroy-protyle",
-                click: () => {
-                    this.eventBus.off("destroy-protyle", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-doctree",
-                click: () => {
-                    this.eventBus.on("open-menu-doctree", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-doctree",
-                click: () => {
-                    this.eventBus.off("open-menu-doctree", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-blockref",
-                click: () => {
-                    this.eventBus.on("open-menu-blockref", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-blockref",
-                click: () => {
-                    this.eventBus.off("open-menu-blockref", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-fileannotationref",
-                click: () => {
-                    this.eventBus.on("open-menu-fileannotationref", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-fileannotationref",
-                click: () => {
-                    this.eventBus.off("open-menu-fileannotationref", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-tag",
-                click: () => {
-                    this.eventBus.on("open-menu-tag", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-tag",
-                click: () => {
-                    this.eventBus.off("open-menu-tag", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-link",
-                click: () => {
-                    this.eventBus.on("open-menu-link", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-link",
-                click: () => {
-                    this.eventBus.off("open-menu-link", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-image",
-                click: () => {
-                    this.eventBus.on("open-menu-image", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-image",
-                click: () => {
-                    this.eventBus.off("open-menu-image", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-av",
-                click: () => {
-                    this.eventBus.on("open-menu-av", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-av",
-                click: () => {
-                    this.eventBus.off("open-menu-av", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-content",
-                click: () => {
-                    this.eventBus.on("open-menu-content", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-content",
-                click: () => {
-                    this.eventBus.off("open-menu-content", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-breadcrumbmore",
-                click: () => {
-                    this.eventBus.on("open-menu-breadcrumbmore", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-breadcrumbmore",
-                click: () => {
-                    this.eventBus.off("open-menu-breadcrumbmore", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-menu-inbox",
-                click: () => {
-                    this.eventBus.on("open-menu-inbox", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-menu-inbox",
-                click: () => {
-                    this.eventBus.off("open-menu-inbox", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On input-search",
-                click: () => {
-                    this.eventBus.on("input-search", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off input-search",
-                click: () => {
-                    this.eventBus.off("input-search", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On paste",
-                click: () => {
-                    this.eventBus.on("paste", this.eventBusPaste);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off paste",
-                click: () => {
-                    this.eventBus.off("paste", this.eventBusPaste);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-siyuan-url-plugin",
-                click: () => {
-                    this.eventBus.on("open-siyuan-url-plugin", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-siyuan-url-plugin",
-                click: () => {
-                    this.eventBus.off("open-siyuan-url-plugin", this.eventBusLog);
-                }
-            }, {
-                icon: "iconSelect",
-                label: "On open-siyuan-url-block",
-                click: () => {
-                    this.eventBus.on("open-siyuan-url-block", this.eventBusLog);
-                }
-            }, {
-                icon: "iconClose",
-                label: "Off open-siyuan-url-block",
-                click: () => {
-                    this.eventBus.off("open-siyuan-url-block", this.eventBusLog);
-                }
-            }]
-        });
-        menu.addSeparator();
-        menu.addItem({
-            icon: "iconSettings",
-            label: "Official Setting Dialog",
-            click: () => {
-                this.openSetting();
-            }
-        });
-        menu.addItem({
-            icon: "iconSparkles",
-            label: this.data[STORAGE_NAME].readonlyText || "Readonly",
-            type: "readonly",
-        });
-        if (this.isMobile) {
-            menu.fullscreen();
-        } else {
-            menu.open({
-                x: rect.right,
-                y: rect.bottom,
-                isLeft: true,
-            });
+            }, { once: true });
+        }, 0);
+
+        // 调整菜单位置，确保不超出屏幕边界
+        this.adjustMenuPosition(menuElement);
+    }
+
+    /**
+     * 调整菜单位置
+     * @param menuElement 菜单元素
+     */
+    private adjustMenuPosition(menuElement: HTMLElement): void {
+        const rect = menuElement.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // 调整水平位置
+        if (rect.right > viewportWidth) {
+            const newLeft = viewportWidth - rect.width - 10;
+            menuElement.style.left = `${Math.max(10, newLeft)}px`;
+        }
+
+        // 调整垂直位置
+        if (rect.bottom > viewportHeight) {
+            const newTop = viewportHeight - rect.height - 10;
+            menuElement.style.top = `${Math.max(10, newTop)}px`;
         }
     }
+
+    /**
+     * 插入交叉引用
+     * @param protyle 编辑器实例
+     * @param figure 图表信息
+     */
+    private insertCrossReference(protyle: any, figure: any): void {
+        try {
+            // 使用正确的交叉引用格式
+            const crossRefHTML = `<span data-type="block-ref" data-subtype="s" data-id="${figure.id}">*</span>`;
+
+            // 获取当前选择范围
+            const range = protyle.toolbar.range;
+            if (range) {
+                // 删除选择内容
+                range.deleteContents();
+
+                // 创建HTML元素并插入
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = crossRefHTML;
+                const crossRefElement = tempDiv.firstChild as HTMLElement;
+
+                range.insertNode(crossRefElement);
+                range.setStartAfter(crossRefElement);
+                range.collapse(true);
+
+                // 更新选择
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+
+                // 触发文档更新
+                this.triggerDocumentUpdate(protyle);
+
+                // 重新应用交叉引用样式以包含新插入的引用
+                this.updateCrossReferenceStyles(protyle);
+            }
+
+            console.log(`插入交叉引用: ${figure.type} ${figure.number}`);
+        } catch (error) {
+            console.error('插入交叉引用失败:', error);
+        }
+    }
+
+    /**
+     * 触发文档更新
+     * @param protyle 编辑器实例
+     */
+    private triggerDocumentUpdate(protyle: any): void {
+        try {
+            // 触发文档更新
+            if (protyle && protyle.wysiwyg && typeof protyle.wysiwyg.renderCustom === 'function') {
+                protyle.wysiwyg.renderCustom();
+            }
+        } catch (error) {
+            console.error('触发文档更新失败:', error);
+        }
+    }
+
+    /**
+     * 更新交叉引用样式
+     * @param protyle 编辑器实例
+     */
+    private async updateCrossReferenceStyles(protyle: any): Promise<void> {
+        try {
+            const docId = protyle?.block?.rootID;
+            if (!docId) return;
+
+            // 重新应用交叉引用样式
+            await this.crossReference.applyCrossReference(protyle);
+
+            console.log('交叉引用样式已更新');
+        } catch (error) {
+            console.error('更新交叉引用样式失败:', error);
+        }
+    }
+
 }
