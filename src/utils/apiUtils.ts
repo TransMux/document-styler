@@ -2,7 +2,7 @@
  * API 调用工具函数
  */
 
-import { fetchPost } from "../../../../util/fetch";
+import { fetchPost } from "siyuan";
 
 /**
  * 获取思源版本号

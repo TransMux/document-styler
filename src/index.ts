@@ -1,6 +1,5 @@
-import { Plugin } from "siyuan";
-import { App } from "siyuan";
-import { Custom } from "siyuan";
+import { Plugin, App } from "siyuan";
+import { Custom, setupWebSocketHandler, hasWebSocket } from "./utils/siyuan-api";
 
 // 导入核心组件
 import { SettingsManager } from "./core/SettingsManager";
@@ -65,7 +64,9 @@ export class DocumentStylerPlugin extends Plugin {
             filter: ["cross-reference", "cross reference", "交叉引用", "jiaochayinyong", "jcyy", "图表引用", "tubiaoyinyong", "tbyy"],
             html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconRef"></use></svg><span class="b3-list-item__text">交叉引用</span></div>`,
             id: "crossReference",
-            callback: ({ protyle }, nodeElement) => {
+            callback: (protyle: any) => {
+                // 从protyle中获取当前节点元素
+                const nodeElement = protyle.wysiwyg?.element?.querySelector('.protyle-wysiwyg--select') as HTMLElement;
                 this.handleCrossReferenceSlash(protyle, nodeElement);
             }
         });
@@ -210,17 +211,10 @@ export class DocumentStylerPlugin extends Plugin {
      * 设置WebSocket监听器 - 简化版本，只监听必要事件
      */
     private setupWebSocketListener(): void {
-        if (window.siyuan?.ws?.ws) {
-            const originalOnMessage = window.siyuan.ws.ws.onmessage;
-            window.siyuan.ws.ws.onmessage = (event) => {
-                // 先调用原始处理器
-                if (originalOnMessage) {
-                    originalOnMessage.call(window.siyuan.ws.ws, event);
-                }
-
-                // 处理我们关心的事件
+        if (hasWebSocket()) {
+            setupWebSocketHandler((event: MessageEvent) => {
                 this.handleWebSocketMessage(event);
-            };
+            });
         }
     }
 
@@ -355,7 +349,7 @@ export class DocumentStylerPlugin extends Plugin {
                 console.log('DocumentStyler: 没有活跃的protyle，清理所有样式');
                 await this.headingNumbering.clearNumbering(null);
                 await this.crossReference.clearCrossReference(protyle);
-                await this.fontStyleManager.clearAllStyles();
+                this.fontStyleManager.clearAllStyles();
             } else {
                 console.log(`DocumentStyler: 还有 ${this.activeProtyles.size} 个活跃的protyle，保留样式`);
             }
@@ -695,7 +689,7 @@ export class DocumentStylerPlugin extends Plugin {
      * @param protyle 编辑器实例
      * @param nodeElement 节点元素
      */
-    private async handleCrossReferenceSlash(protyle: any, nodeElement: HTMLElement): Promise<void> {
+    private async handleCrossReferenceSlash(protyle: any, nodeElement: HTMLElement | null): Promise<void> {
         try {
             // 获取当前文档ID
             const docId = protyle?.block?.rootID;

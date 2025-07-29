@@ -2,8 +2,7 @@
  * DocumentStyler 插件类型定义
  */
 
-import { App } from "../../../../index";
-import { Plugin } from "../../../index";
+import { App, Plugin } from "siyuan";
 
 /**
  * 标题编号样式枚举
