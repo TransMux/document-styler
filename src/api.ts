@@ -15,6 +15,26 @@ export async function request(url: string, data: any) {
     return res;
 }
 
+type NotebookId = string;
+type Notebook = any;
+type NotebookConf = any;
+type IReslsNotebooks = any;
+type IResGetNotebookConf = any;
+type IResUpload = any;
+type IResdoOperations = any;
+type DocumentId = string;
+type BlockId = string;
+type PreviousID = string;
+type ParentID = string;
+type IResGetBlockKramdown = any;
+type IResGetChildBlock = any;
+type IResForwardProxy = any;
+type IResBootProgress = any;
+type IResExportMdContent = any;
+type IResExportResources = any;
+type IResReadDir = any;
+type IResGetTemplates = any;
+type Block = any;
 
 // **************************************** Noteboook ****************************************
 

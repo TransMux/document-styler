@@ -1,7 +1,7 @@
 {
-  "name": "plugin-sample-vite",
-  "author": "frostime",
-  "url": "https://github.com/frostime/plugin-sample-vite",
+  "name": "document-styler",
+  "author": "TransMux",
+  "url": "https://github.com/TransMux/document-styler",
   "version": "0.3.6",
   "minAppVersion": "3.0.12",
   "backends": [
@@ -21,12 +21,12 @@
     "desktop-window"
   ],
   "displayName": {
-    "en_US": "Plugin sample with vite",
-    "zh_CN": "插件样例 vite 版"
+    "en_US": "Document Styler",
+    "zh_CN": "文档样式"
   },
   "description": {
-    "en_US": "SiYuan plugin sample with vite",
-    "zh_CN": "使用 vite 开发的思源插件样例"
+    "en_US": "Document Styler for Siyuan",
+    "zh_CN": "思源文档样式"
   },
   "readme": {
     "en_US": "README.md",
