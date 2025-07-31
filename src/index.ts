@@ -654,7 +654,17 @@ export default class DocumentStylerPlugin extends Plugin {
         if (!docId) return;
 
         try {
+            console.log(`DocumentStyler: 开始应用字体设置，文档ID: ${docId}`);
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            console.log('DocumentStyler: 获取到文档设置', docSettings);
+            
+            // 检查是否启用了字体自定义
+            if (!docSettings.customFontEnabled) {
+                console.log('DocumentStyler: 字体自定义未启用，清除字体样式');
+                await this.fontStyleManager.clearDocumentStyles(docId);
+                return;
+            }
+            
             await this.fontStyleManager.applyFontStyles(docId, docSettings.fontSettings);
             console.log('DocumentStyler: 字体设置应用完成');
         } catch (error) {

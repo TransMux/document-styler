@@ -348,6 +348,12 @@ export class DockPanel implements IDockPanel {
         // 清除之前的事件监听器
         this.clearPanelEvents();
 
+        // 绑定字体设置事件
+        this.bindFontSettingsEvents();
+
+        // 绑定重置字体设置事件
+        this.bindResetFontSettingsEvent();
+
         // 标题编号样式选择器
         for (let i = 0; i < 6; i++) {
             const styleSelect = this.panelElement.querySelector(`#heading-style-${i}`) as HTMLSelectElement;
@@ -394,7 +400,6 @@ export class DockPanel implements IDockPanel {
                     }
                 };
                 formatInput.addEventListener('change', handler);
-                // 存储事件处理器以便后续清理
                 (formatInput as any)._documentStylerHandler = handler;
             }
         }
@@ -406,16 +411,11 @@ export class DockPanel implements IDockPanel {
                 const docId = this.documentManager.getCurrentDocId();
                 if (!docId) return;
 
-                const prefix = (e.target as HTMLInputElement).value || '图';
+                const prefix = (e.target as HTMLInputElement).value;
                 console.log(`DocumentStyler: 图片编号前缀改变: ${prefix}`);
 
                 await this.settingsManager.setDocumentFigurePrefix(docId, prefix);
-
-                // 如果交叉引用功能已启用，只更新CSS样式，不重新排序
-                const docSettings = await this.settingsManager.getDocumentSettings(docId);
-                if (docSettings.crossReferenceEnabled) {
-                    await this.crossReference.updateFigurePrefixStyles(docId);
-                }
+                await this.applyCrossReferenceSettings(docId, true);
             };
             figurePrefixInput.addEventListener('change', handler);
             (figurePrefixInput as any)._documentStylerHandler = handler;
@@ -427,26 +427,21 @@ export class DockPanel implements IDockPanel {
                 const docId = this.documentManager.getCurrentDocId();
                 if (!docId) return;
 
-                const prefix = (e.target as HTMLInputElement).value || '表';
+                const prefix = (e.target as HTMLInputElement).value;
                 console.log(`DocumentStyler: 表格编号前缀改变: ${prefix}`);
 
                 await this.settingsManager.setDocumentTablePrefix(docId, prefix);
-
-                // 如果交叉引用功能已启用，只更新CSS样式，不重新排序
-                const docSettings = await this.settingsManager.getDocumentSettings(docId);
-                if (docSettings.crossReferenceEnabled) {
-                    await this.crossReference.updateFigurePrefixStyles(docId);
-                }
+                await this.applyCrossReferenceSettings(docId, true);
             };
             tablePrefixInput.addEventListener('change', handler);
             (tablePrefixInput as any)._documentStylerHandler = handler;
         }
 
-        // 绑定字体设置事件
-        this.bindFontSettingsEvents();
-
-        // 绑定重置字体设置按钮事件
-        this.bindResetFontSettingsEvent();
+        // 绑定文档状态事件
+        const currentDocId = this.documentManager.getCurrentDocId();
+        if (currentDocId) {
+            this.bindDocumentStatusEvents(currentDocId);
+        }
     }
 
     /**
@@ -738,10 +733,12 @@ export class DockPanel implements IDockPanel {
         if (!docId) return;
 
         try {
+            console.log(`DocumentStyler: 开始应用文档 ${docId} 的字体设置`);
+            
             // 调用主插件的字体设置应用方法
             if (this.pluginInstance && typeof this.pluginInstance.applyFontSettings === 'function') {
                 await this.pluginInstance.applyFontSettings();
-                console.log(`DocumentStyler: 应用文档 ${docId} 的字体设置`);
+                console.log(`DocumentStyler: 应用文档 ${docId} 的字体设置完成`);
             } else {
                 console.warn('DocumentStyler: 主插件实例不可用，无法应用字体设置');
             }
