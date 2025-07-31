@@ -18,7 +18,7 @@ import { IPluginOptions, IDocumentStylerSettings, IDocumentInfo } from "./types"
  * - 图片/表格交叉引用与标题标签
  * - 实时更新与可自定义编号格式
  */
-export class DocumentStylerPlugin extends Plugin {
+export default class DocumentStylerPlugin extends Plugin {
     private appRef: App;
 
     // 核心组件 - 简化架构，只保留必要的模块
