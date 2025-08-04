@@ -3,6 +3,7 @@
  * 负责管理内测功能的验证和状态管理
  */
 
+import { Dialog } from "siyuan";
 import { IBetaFeatureManager, IBetaFeatureSettings } from "../types";
 import { SettingsManager } from "./SettingsManager";
 
@@ -13,11 +14,10 @@ const BETA_CODES: string[] = [
 
 export class BetaFeatureManager implements IBetaFeatureManager {
     private settingsManager: SettingsManager;
-    private pluginInstance: any;
+    private currentDialog: Dialog | null = null;
 
-    constructor(settingsManager: SettingsManager, pluginInstance?: any) {
+    constructor(settingsManager: SettingsManager) {
         this.settingsManager = settingsManager;
-        this.pluginInstance = pluginInstance;
     }
 
     async init(): Promise<void> {
@@ -95,26 +95,29 @@ export class BetaFeatureManager implements IBetaFeatureManager {
      * 打开内测验证界面
      */
     openVerificationDialog(): void {
-        if (!this.pluginInstance) {
-            console.error('DocumentStyler: 插件实例未提供，无法打开验证对话框');
-            return;
+        // 如果已有对话框打开，先关闭
+        if (this.currentDialog) {
+            this.currentDialog.destroy();
+            this.currentDialog = null;
         }
 
-        // 注册内测验证dock
-        this.pluginInstance.addDock({
-            config: {
-                position: "RightTop",
-                size: { width: 400, height: 300 },
-                icon: "iconLock",
-                title: "内测功能验证",
-                show: true,
-                index: 101
-            },
-            data: {},
-            type: "beta-verification-dock",
-            init: (custom: any) => this.initVerificationDock(custom),
-            destroy: () => this.destroyVerificationDock()
+        const isAlreadyVerified = this.isBetaVerified();
+        
+        this.currentDialog = new Dialog({
+            title: "内测功能验证",
+            content: this.generateDialogContent(isAlreadyVerified),
+            width: "450px",
+            height: isAlreadyVerified ? "320px" : "380px",
+            destroyCallback: () => {
+                this.currentDialog = null;
+            }
         });
+
+        if (!isAlreadyVerified) {
+            this.bindDialogEvents();
+        } else {
+            this.bindVerifiedDialogEvents();
+        }
     }
 
     /**
@@ -130,34 +133,20 @@ export class BetaFeatureManager implements IBetaFeatureManager {
     }
 
     /**
-     * 初始化验证dock
+     * 生成对话框内容
      */
-    private async initVerificationDock(custom: any): Promise<void> {
-        if (!custom || !custom.element) {
-            console.error('DocumentStyler: Custom element not available for verification dock');
-            return;
-        }
-
-        const isAlreadyVerified = this.isBetaVerified();
-        
-        custom.element.innerHTML = `
-            <div class="beta-verification-panel" style="padding: 20px;">
-                <div class="block__icons">
-                    <div class="block__logo">
-                        <svg class="block__logoicon"><use xlink:href="#iconLock"></use></svg>
-                        内测功能验证
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    ${isAlreadyVerified ? this.generateVerifiedHTML() : this.generateUnverifiedHTML()}
-                </div>
+    private generateDialogContent(isAlreadyVerified: boolean): string {
+        return `
+            <div class="b3-dialog__content" style="padding: 20px;">
+                ${isAlreadyVerified ? this.generateVerifiedHTML() : this.generateUnverifiedHTML()}
+            </div>
+            <div class="b3-dialog__action">
+                ${isAlreadyVerified ? 
+                    '<button class="b3-button b3-button--text" id="close-beta-dialog">关闭</button>' :
+                    '<button class="b3-button b3-button--cancel" id="cancel-beta-verification">取消</button><div class="fn__space"></div><button class="b3-button b3-button--text" id="verify-beta-code">验证</button>'
+                }
             </div>
         `;
-
-        if (!isAlreadyVerified) {
-            this.bindVerificationEvents(custom.element);
-        }
     }
 
     /**
@@ -177,11 +166,8 @@ export class BetaFeatureManager implements IBetaFeatureManager {
                     验证时间: ${verifiedDate}
                 </p>
                 <p style="color: var(--b3-theme-on-surface-light); margin-bottom: 20px;">
-                    您已成功加入内测群体，可以使用所有内测功能！
+                    您已成功加入内测，可以使用所有内测功能！
                 </p>
-                <button class="b3-button b3-button--primary" id="close-verification-dock">
-                    关闭
-                </button>
             </div>
         `;
     }
@@ -192,7 +178,7 @@ export class BetaFeatureManager implements IBetaFeatureManager {
     private generateUnverifiedHTML(): string {
         return `
             <div class="verification-form">
-                <h3 style="margin-bottom: 16px;">加入内测群，获取更多功能</h3>
+                <h3 style="margin-bottom: 16px;">🚀 加入内测，获取更多功能</h3>
                 <p style="color: var(--b3-theme-on-surface-light); margin-bottom: 20px;">
                     请输入内测码以解锁专属功能和提前体验新特性。
                 </p>
@@ -209,15 +195,6 @@ export class BetaFeatureManager implements IBetaFeatureManager {
                            style="width: 200px;">
                 </div>
                 
-                <div style="margin-top: 20px; text-align: center;">
-                    <button class="b3-button b3-button--primary" id="verify-beta-code" style="margin-right: 8px;">
-                        验证
-                    </button>
-                    <button class="b3-button" id="cancel-verification">
-                        取消
-                    </button>
-                </div>
-                
                 <div id="verification-message" style="margin-top: 16px; text-align: center; display: none;">
                     <!-- 验证结果消息 -->
                 </div>
@@ -226,13 +203,15 @@ export class BetaFeatureManager implements IBetaFeatureManager {
     }
 
     /**
-     * 绑定验证界面事件
+     * 绑定未验证状态的对话框事件
      */
-    private bindVerificationEvents(element: Element): void {
-        const codeInput = element.querySelector('#beta-code-input') as HTMLInputElement;
-        const verifyButton = element.querySelector('#verify-beta-code') as HTMLButtonElement;
-        const cancelButton = element.querySelector('#cancel-verification') as HTMLButtonElement;
-        const messageDiv = element.querySelector('#verification-message') as HTMLDivElement;
+    private bindDialogEvents(): void {
+        if (!this.currentDialog) return;
+
+        const codeInput = this.currentDialog.element.querySelector('#beta-code-input') as HTMLInputElement;
+        const verifyButton = this.currentDialog.element.querySelector('#verify-beta-code') as HTMLButtonElement;
+        const cancelButton = this.currentDialog.element.querySelector('#cancel-beta-verification') as HTMLButtonElement;
+        const messageDiv = this.currentDialog.element.querySelector('#verification-message') as HTMLDivElement;
 
         if (verifyButton && codeInput) {
             verifyButton.addEventListener('click', async () => {
@@ -250,9 +229,11 @@ export class BetaFeatureManager implements IBetaFeatureManager {
                     if (isValid) {
                         this.showMessage(messageDiv, '验证成功！内测功能已解锁', 'success');
                         setTimeout(() => {
-                            // 刷新界面显示已验证状态
-                            if (element.parentElement) {
-                                this.initVerificationDock({ element: element.parentElement });
+                            // 关闭对话框并重新打开显示已验证状态
+                            if (this.currentDialog) {
+                                this.currentDialog.destroy();
+                                this.currentDialog = null;
+                                this.openVerificationDialog();
                             }
                         }, 1500);
                     } else {
@@ -277,15 +258,27 @@ export class BetaFeatureManager implements IBetaFeatureManager {
 
         if (cancelButton) {
             cancelButton.addEventListener('click', () => {
-                this.closeVerificationDock();
+                if (this.currentDialog) {
+                    this.currentDialog.destroy();
+                    this.currentDialog = null;
+                }
             });
         }
+    }
 
-        // 绑定关闭按钮（已验证状态）
-        const closeButton = element.querySelector('#close-verification-dock') as HTMLButtonElement;
+    /**
+     * 绑定已验证状态的对话框事件
+     */
+    private bindVerifiedDialogEvents(): void {
+        if (!this.currentDialog) return;
+
+        const closeButton = this.currentDialog.element.querySelector('#close-beta-dialog') as HTMLButtonElement;
         if (closeButton) {
             closeButton.addEventListener('click', () => {
-                this.closeVerificationDock();
+                if (this.currentDialog) {
+                    this.currentDialog.destroy();
+                    this.currentDialog = null;
+                }
             });
         }
     }
@@ -304,21 +297,5 @@ export class BetaFeatureManager implements IBetaFeatureManager {
         messageDiv.style.display = 'block';
     }
 
-    /**
-     * 关闭验证dock
-     */
-    private closeVerificationDock(): void {
-        // 通过思源API关闭dock
-        if (this.pluginInstance && typeof this.pluginInstance.removeDock === 'function') {
-            this.pluginInstance.removeDock("beta-verification-dock");
-        }
-    }
 
-    /**
-     * 销毁验证dock
-     */
-    private destroyVerificationDock(): void {
-        // 清理资源
-        console.log('DocumentStyler: 内测验证dock已销毁');
-    }
 }

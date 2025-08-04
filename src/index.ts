@@ -92,7 +92,7 @@ export default class DocumentStylerPlugin extends Plugin {
         );
         this.crossReference = new CrossReference(this.documentManager);
         this.crossReference.setSettingsManager(this.settingsManager);
-        this.betaFeatureManager = new BetaFeatureManager(this.settingsManager, this);
+        this.betaFeatureManager = new BetaFeatureManager(this.settingsManager);
 
         // UI组件
         this.dockPanel = new DockPanel(
