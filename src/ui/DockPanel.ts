@@ -3,8 +3,8 @@
  * 负责管理插件的侧边栏面板UI
  */
 
-import { Custom } from "../../../../layout/dock/Custom";
-import { IDockPanel, IFigureInfo, HeadingNumberStyle, IFontSettings, IBetaFeatureSettings } from "../types";
+import { Custom } from "../utils/siyuan-api";
+import { IDockPanel, IFigureInfo, HeadingNumberStyle, IFontSettings } from "../types";
 import { SettingsManager } from "../core/SettingsManager";
 import { DocumentManager } from "../core/DocumentManager";
 import { CrossReference } from "../core/CrossReference";
@@ -234,7 +234,6 @@ export class DockPanel implements IDockPanel {
 
                     <!-- 内测功能 -->
                     <div class="document-styler-section">
-                        <h3 class="document-styler-section-title">内测功能</h3>
                         ${this.generateBetaFeatureHTML()}
                     </div>
                 </div>

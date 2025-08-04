@@ -57,7 +57,7 @@ export class BetaFeatureManager implements IBetaFeatureManager {
         }
 
         // 检查内测码是否有效
-        const isValidCode = BETA_CODES.includes(code.trim().toUpperCase());
+        const isValidCode = BETA_CODES.includes(code.trim().toLowerCase());
         
         if (isValidCode) {
             const settings = this.settingsManager.getSettings();
@@ -68,14 +68,14 @@ export class BetaFeatureManager implements IBetaFeatureManager {
             };
 
             // 如果已经验证过该内测码，直接返回true
-            if (betaSettings.verifiedCodes.includes(code.trim().toUpperCase())) {
+            if (betaSettings.verifiedCodes.includes(code.trim().toLowerCase())) {
                 return true;
             }
 
             // 更新内测设置
             const updatedBetaSettings: IBetaFeatureSettings = {
                 isVerified: true,
-                verifiedCodes: [...betaSettings.verifiedCodes, code.trim().toUpperCase()],
+                verifiedCodes: [...betaSettings.verifiedCodes, code.trim().toLowerCase()],
                 verifiedAt: Date.now()
             };
 
@@ -104,10 +104,9 @@ export class BetaFeatureManager implements IBetaFeatureManager {
         const isAlreadyVerified = this.isBetaVerified();
         
         this.currentDialog = new Dialog({
-            title: "内测功能验证",
+            title: "🚀 加入内测，获取更多功能",
             content: this.generateDialogContent(isAlreadyVerified),
             width: "450px",
-            height: isAlreadyVerified ? "320px" : "380px",
             destroyCallback: () => {
                 this.currentDialog = null;
             }
@@ -178,21 +177,15 @@ export class BetaFeatureManager implements IBetaFeatureManager {
     private generateUnverifiedHTML(): string {
         return `
             <div class="verification-form">
-                <h3 style="margin-bottom: 16px;">🚀 加入内测，获取更多功能</h3>
                 <p style="color: var(--b3-theme-on-surface-light); margin-bottom: 20px;">
                     请输入内测码以解锁专属功能和提前体验新特性。
                 </p>
                 
-                <div class="fn__flex b3-label config__item">
-                    <div class="fn__flex-1">
-                        内测码
-                        <div class="b3-label__text">请输入您获得的内测验证码</div>
-                    </div>
-                    <span class="fn__space"></span>
+                <div class="fn__flex config__item">
                     <input class="b3-text-field fn__flex-center" 
                            id="beta-code-input" 
                            placeholder="请输入内测码" 
-                           style="width: 200px;">
+                           style="width: 100%;">
                 </div>
                 
                 <div id="verification-message" style="margin-top: 16px; text-align: center; display: none;">
