@@ -4,16 +4,18 @@
  */
 
 import { Custom } from "../../../../layout/dock/Custom";
-import { IDockPanel, IFigureInfo, HeadingNumberStyle, IFontSettings } from "../types";
+import { IDockPanel, IFigureInfo, HeadingNumberStyle, IFontSettings, IBetaFeatureSettings } from "../types";
 import { SettingsManager } from "../core/SettingsManager";
 import { DocumentManager } from "../core/DocumentManager";
 import { CrossReference } from "../core/CrossReference";
+import { BetaFeatureManager } from "../core/BetaFeatureManager";
 import { NumberStyleConverter } from "../utils/numberStyleConverter";
 
 export class DockPanel implements IDockPanel {
     private settingsManager: SettingsManager;
     private documentManager: DocumentManager;
     private crossReference: CrossReference;
+    private betaFeatureManager: BetaFeatureManager;
     private customElement: Custom | null = null;
     private panelElement: Element | null = null;
     private pluginInstance: any; // 主插件实例
@@ -24,11 +26,13 @@ export class DockPanel implements IDockPanel {
         settingsManager: SettingsManager,
         documentManager: DocumentManager,
         crossReference: CrossReference,
+        betaFeatureManager: BetaFeatureManager,
         pluginInstance?: any
     ) {
         this.settingsManager = settingsManager;
         this.documentManager = documentManager;
         this.crossReference = crossReference;
+        this.betaFeatureManager = betaFeatureManager;
         this.pluginInstance = pluginInstance;
     }
 
@@ -227,6 +231,12 @@ export class DockPanel implements IDockPanel {
                             <!-- 动态生成的图片表格列表 -->
                         </div>
                     </div>
+
+                    <!-- 内测功能 -->
+                    <div class="document-styler-section">
+                        <h3 class="document-styler-section-title">内测功能</h3>
+                        ${this.generateBetaFeatureHTML()}
+                    </div>
                 </div>
             </div>
         `;
@@ -340,6 +350,46 @@ export class DockPanel implements IDockPanel {
     }
 
     /**
+     * 生成内测功能HTML
+     */
+    private generateBetaFeatureHTML(): string {
+        const betaStatus = this.betaFeatureManager.getBetaStatus();
+        const isVerified = this.betaFeatureManager.isBetaVerified();
+
+        if (isVerified) {
+            const verifiedDate = betaStatus.verifiedAt ? new Date(betaStatus.verifiedAt).toLocaleDateString() : '未知';
+            return `
+                <div class="beta-feature-verified" style="padding: 16px; background: var(--b3-theme-primary-lightest); border-radius: 8px;">
+                    <div class="fn__flex" style="align-items: center; margin-bottom: 8px;">
+                        <svg style="width: 20px; height: 20px; margin-right: 8px; color: var(--b3-theme-primary);"><use xlink:href="#iconCheck"></use></svg>
+                        <span style="color: var(--b3-theme-primary); font-weight: 500;">内测验证已完成</span>
+                    </div>
+                    <div style="color: var(--b3-theme-on-surface-light); font-size: 12px; margin-bottom: 12px;">
+                        验证时间: ${verifiedDate} | 已验证 ${betaStatus.verifiedCodes.length} 个内测码
+                    </div>
+                    <div style="color: var(--b3-theme-on-surface); font-size: 14px;">
+                        🎉 您已成功加入内测群体，可以使用所有内测功能和提前体验新特性！
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="beta-feature-unverified" style="padding: 16px; background: var(--b3-theme-surface); border: 1px dashed var(--b3-theme-on-surface-light); border-radius: 8px;">
+                    <div style="margin-bottom: 12px;">
+                        <div style="color: var(--b3-theme-on-surface); font-weight: 500; margin-bottom: 4px;">🚀 加入内测群，更快获取更多功能</div>
+                        <div style="color: var(--b3-theme-on-surface-light); font-size: 12px; line-height: 1.4;">
+                            输入内测码解锁专属功能，抢先体验最新特性和改进
+                        </div>
+                    </div>
+                    <button class="b3-button b3-button--primary" id="open-beta-verification" style="width: 100%;">
+                        输入内测码
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    /**
      * 绑定面板事件
      */
     private bindPanelEvents(): void {
@@ -353,6 +403,9 @@ export class DockPanel implements IDockPanel {
 
         // 绑定重置字体设置事件
         this.bindResetFontSettingsEvent();
+
+        // 绑定内测功能事件
+        this.bindBetaFeatureEvents();
 
         // 标题编号样式选择器
         for (let i = 0; i < 6; i++) {
@@ -1158,6 +1211,24 @@ export class DockPanel implements IDockPanel {
     private truncateText(text: string, maxLength: number): string {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
+    }
+
+    /**
+     * 绑定内测功能事件
+     */
+    private bindBetaFeatureEvents(): void {
+        if (!this.panelElement) return;
+
+        const betaButton = this.panelElement.querySelector('#open-beta-verification') as HTMLButtonElement;
+        if (betaButton) {
+            const handler = () => {
+                console.log('DocumentStyler: 打开内测验证界面');
+                this.betaFeatureManager.openVerificationDialog();
+            };
+            betaButton.addEventListener('click', handler);
+            // 存储事件处理器以便后续清理
+            (betaButton as any)._documentStylerHandler = handler;
+        }
     }
 
 }

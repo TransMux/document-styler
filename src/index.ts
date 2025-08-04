@@ -7,6 +7,7 @@ import { DocumentManager } from "./core/DocumentManager";
 import { HeadingNumbering } from "./core/HeadingNumbering";
 import { CrossReference } from "./core/CrossReference";
 import { FontStyleManager } from "./core/FontStyleManager";
+import { BetaFeatureManager } from "./core/BetaFeatureManager";
 import { DockPanel } from "./ui/DockPanel";
 import { StyleManager } from "./ui/StyleManager";
 import { IPluginOptions, IDocumentStylerSettings, IDocumentInfo } from "./types";
@@ -27,6 +28,7 @@ export default class DocumentStylerPlugin extends Plugin {
     private headingNumbering: HeadingNumbering;
     private crossReference: CrossReference;
     private fontStyleManager: FontStyleManager;
+    private betaFeatureManager: BetaFeatureManager;
     private styleManager: StyleManager;
     private dockPanel: DockPanel;
 
@@ -90,12 +92,14 @@ export default class DocumentStylerPlugin extends Plugin {
         );
         this.crossReference = new CrossReference(this.documentManager);
         this.crossReference.setSettingsManager(this.settingsManager);
+        this.betaFeatureManager = new BetaFeatureManager(this.settingsManager, this);
 
         // UI组件
         this.dockPanel = new DockPanel(
             this.settingsManager,
             this.documentManager,
             this.crossReference,
+            this.betaFeatureManager,
             this
         );
 
@@ -154,6 +158,7 @@ export default class DocumentStylerPlugin extends Plugin {
         await this.documentManager.init();
         await this.fontStyleManager.init();
         await this.styleManager.init();
+        await this.betaFeatureManager.init();
         await this.headingNumbering.init();
         await this.crossReference.init();
         await this.dockPanel.init();
@@ -167,6 +172,7 @@ export default class DocumentStylerPlugin extends Plugin {
         this.dockPanel?.destroy();
         this.crossReference?.destroy();
         this.headingNumbering?.destroy();
+        this.betaFeatureManager?.destroy();
         this.styleManager?.destroy();
         this.fontStyleManager?.destroy();
         this.documentManager?.destroy();
@@ -946,6 +952,22 @@ export default class DocumentStylerPlugin extends Plugin {
         } catch (error) {
             console.error('更新交叉引用样式失败:', error);
         }
+    }
+
+    /**
+     * 检验是否加入内测 - 公共接口
+     * @returns 是否已通过内测验证
+     */
+    public isBetaVerified(): boolean {
+        return this.betaFeatureManager?.isBetaVerified() || false;
+    }
+
+    /**
+     * 获取内测功能管理器 - 供外部使用
+     * @returns BetaFeatureManager实例
+     */
+    public getBetaFeatureManager(): BetaFeatureManager | null {
+        return this.betaFeatureManager || null;
     }
 
 }

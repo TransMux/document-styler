@@ -50,6 +50,20 @@ export interface IDocumentStylerSettings {
     figurePrefix: string;
     /** 表格编号前缀配置 */
     tablePrefix: string;
+    /** 内测功能配置 */
+    betaFeatures?: IBetaFeatureSettings;
+}
+
+/**
+ * 内测功能设置接口
+ */
+export interface IBetaFeatureSettings {
+    /** 是否已通过内测验证 */
+    isVerified: boolean;
+    /** 已验证的内测码列表 */
+    verifiedCodes: string[];
+    /** 验证时间戳 */
+    verifiedAt?: number;
 }
 
 /**
@@ -261,6 +275,20 @@ export interface IDockPanel extends IModule {
     showPanel(): void;
     /** 隐藏面板 */
     hidePanel(): void;
+}
+
+/**
+ * 内测功能管理器接口
+ */
+export interface IBetaFeatureManager extends IModule {
+    /** 检验是否加入内测 */
+    isBetaVerified(): boolean;
+    /** 验证内测码 */
+    verifyBetaCode(code: string): Promise<boolean>;
+    /** 打开内测验证界面 */
+    openVerificationDialog(): void;
+    /** 获取内测状态 */
+    getBetaStatus(): IBetaFeatureSettings;
 }
 
 /**

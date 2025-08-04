@@ -4,7 +4,7 @@
  */
 
 import { Plugin } from "../../../index";
-import { ISettingsManager, IDocumentStylerSettings, HeadingNumberStyle, DOCUMENT_ATTR_KEYS, IDocumentStylerDocumentSettings, IFontSettings, FONT_SETTINGS_CONSTANTS } from "../types";
+import { ISettingsManager, IDocumentStylerSettings, HeadingNumberStyle, DOCUMENT_ATTR_KEYS, IDocumentStylerDocumentSettings, IFontSettings, FONT_SETTINGS_CONSTANTS, IBetaFeatureSettings } from "../types";
 import { getDocumentAttr, setDocumentAttr } from "../utils/apiUtils";
 
 // 存储配置的键名
@@ -32,6 +32,11 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
     ],
     figurePrefix: "图",
     tablePrefix: "表",
+    betaFeatures: {
+        isVerified: false,
+        verifiedCodes: [],
+        verifiedAt: undefined
+    }
 };
 
 export class SettingsManager implements ISettingsManager {
@@ -580,5 +585,49 @@ export class SettingsManager implements ISettingsManager {
         }
 
         return fixed;
+    }
+
+    /**
+     * 获取内测功能设置
+     */
+    getBetaFeatureSettings(): IBetaFeatureSettings {
+        return this.settings.betaFeatures || {
+            isVerified: false,
+            verifiedCodes: [],
+            verifiedAt: undefined
+        };
+    }
+
+    /**
+     * 更新内测功能设置
+     */
+    async updateBetaFeatureSettings(betaSettings: Partial<IBetaFeatureSettings>): Promise<void> {
+        const currentBetaSettings = this.getBetaFeatureSettings();
+        const updatedBetaSettings = Object.assign({}, currentBetaSettings, betaSettings);
+        
+        await this.updateSettings({
+            betaFeatures: updatedBetaSettings
+        });
+    }
+
+    /**
+     * 检查是否已通过内测验证
+     */
+    isBetaVerified(): boolean {
+        return this.getBetaFeatureSettings().isVerified;
+    }
+
+    /**
+     * 添加验证过的内测码
+     */
+    async addVerifiedBetaCode(code: string): Promise<void> {
+        const betaSettings = this.getBetaFeatureSettings();
+        if (!betaSettings.verifiedCodes.includes(code)) {
+            await this.updateBetaFeatureSettings({
+                verifiedCodes: [...betaSettings.verifiedCodes, code],
+                isVerified: true,
+                verifiedAt: Date.now()
+            });
+        }
     }
 }
