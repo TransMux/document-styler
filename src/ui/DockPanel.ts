@@ -367,7 +367,7 @@ export class DockPanel implements IDockPanel {
                         验证时间: ${verifiedDate} | 已验证 ${betaStatus.verifiedCodes.length} 个内测码
                     </div>
                     <div style="color: var(--b3-theme-on-surface); font-size: 14px;">
-                        🎉 您已成功加入内测群体，可以使用所有内测功能和提前体验新特性！
+                        🎉 您已成功加入内测，可以使用所有内测功能和提前体验新特性！遇到任何问题随时反馈哦~！
                     </div>
                 </div>
             `;
