@@ -1122,8 +1122,8 @@ export default class DocumentStylerPlugin extends Plugin {
             for (const img of imgs) {
                 const wrapper = img.parentElement as HTMLElement | null;
                 if (!wrapper || wrapper.tagName !== 'SPAN') continue;
-                if (wrapper.style.width !== 'calc(1lh - 8px)') {
-                    wrapper.style.width = 'calc(1lh - 8px)';
+                if (wrapper.style.width !== '1lh') {
+                    wrapper.style.width = '1lh';
                     localChanged++;
                 }
             }
