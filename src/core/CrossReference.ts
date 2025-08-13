@@ -6,12 +6,14 @@
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
 import { CrossReferenceController } from "./CrossReferenceController";
+import { showMessage } from "siyuan";
 
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
     private controller: CrossReferenceController;
     private panelUpdateCallback: (() => Promise<void>) | null = null;
     private settingsManager: any = null;
+    private betaFeatureManager: any = null;
 
     constructor(documentManager: DocumentManager) {
         this.documentManager = documentManager;
@@ -37,6 +39,14 @@ export class CrossReference implements ICrossReference {
      */
     setSettingsManager(settingsManager: any): void {
         this.settingsManager = settingsManager;
+    }
+
+    /**
+     * 设置内测功能管理器引用
+     * @param betaFeatureManager 内测功能管理器实例
+     */
+    setBetaFeatureManager(betaFeatureManager: any): void {
+        this.betaFeatureManager = betaFeatureManager;
     }
 
     /**
@@ -102,6 +112,12 @@ export class CrossReference implements ICrossReference {
     async applyCrossReference(protyle: any, config?: { fromWebSocket?: boolean }): Promise<void> {
         if (!protyle) return;
 
+        // 检查是否为内测用户
+        if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
+            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+            return;
+        }
+
         try {
             const docId = protyle?.block?.rootID;
             if (docId) {
@@ -145,6 +161,12 @@ export class CrossReference implements ICrossReference {
      */
     async getFiguresList(docId: string): Promise<IFigureInfo[]> {
         if (!docId) return [];
+
+        // 检查是否为内测用户
+        if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
+            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+            return [];
+        }
 
         try {
             return await this.controller.getFiguresList(docId);
@@ -602,6 +624,12 @@ export class CrossReference implements ICrossReference {
      * 手动触发交叉引用更新（用于调试和特殊情况）
      */
     async forceUpdate(): Promise<void> {
+        // 检查是否为内测用户
+        if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
+            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+            return;
+        }
+
         const currentProtyle = this.documentManager.getCurrentProtyle();
         if (currentProtyle) {
             console.log('CrossReference: 手动触发交叉引用更新');
@@ -624,6 +652,12 @@ export class CrossReference implements ICrossReference {
      * @param figureNumber 编号
      */
     scrollToFigure(figureId: string, figureType?: string, figureNumber?: string): void {
+        // 检查是否为内测用户
+        if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
+            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+            return;
+        }
+
         const targetElement = document.querySelector(`[data-node-id="${figureId}"]`) as HTMLElement;
 
         if (targetElement) {

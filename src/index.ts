@@ -1,4 +1,6 @@
-import { Plugin, App } from "siyuan";
+import { Plugin, App, showMessage } from "siyuan";
+import { insertBlock, updateBlock } from "./api";
+import { batchUpdateBlockContent } from "./utils/apiUtils";
 import { Custom, setupWebSocketHandler, hasWebSocket } from "./utils/siyuan-api";
 
 // 导入核心组件
@@ -53,6 +55,9 @@ export default class DocumentStylerPlugin extends Plugin {
         // 注册斜杠命令
         this.registerSlashCommands();
 
+        // 注册命令面板命令
+        this.registerCommands();
+
         // 初始化核心组件 - 简化依赖关系
         this.initializeComponents();
     }
@@ -67,10 +72,49 @@ export default class DocumentStylerPlugin extends Plugin {
             html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconRef"></use></svg><span class="b3-list-item__text">交叉引用</span></div>`,
             id: "crossReference",
             callback: (protyle: any) => {
+                // 检查是否为内测用户
+                if (!this.betaFeatureManager.isBetaVerified()) {
+                    // 非内测用户，弹出提示信息
+                    return;
+                }
+
                 // 从protyle中获取当前节点元素
                 const nodeElement = protyle.wysiwyg?.element?.querySelector('.protyle-wysiwyg--select') as HTMLElement;
                 this.handleCrossReferenceSlash(protyle, nodeElement);
             }
+        });
+    }
+
+    /**
+     * 注册命令面板命令（使用 addCommand）
+     */
+    private registerCommands(): void {
+        // 行内换行转多块
+        this.addCommand({
+            langKey: "splitInlineBreaksToBlocks",
+            langText: "行内换行转多块 (break inline to blocks)",
+            hotkey: "",
+            callback: async () => {
+                debugger
+                const protyle = this.documentManager.getCurrentProtyle();
+                if (protyle) {
+                    await this.handleSplitInlineBreaks(protyle);
+                }
+            },
+        });
+
+        // 将选中范围的文本内的图片设置为行高
+        this.addCommand({
+            langKey: "setSelectedImagesToLineHeight",
+            langText: "将选中范围的图片设置为行高 （set inline image to line height）",
+            hotkey: "",
+            callback: async () => {
+                debugger
+                const protyle = this.documentManager.getCurrentProtyle();
+                if (protyle) {
+                    await this.handleSetImagesToLineHeight(protyle);
+                }
+            },
         });
     }
 
@@ -93,6 +137,7 @@ export default class DocumentStylerPlugin extends Plugin {
         this.crossReference = new CrossReference(this.documentManager);
         this.crossReference.setSettingsManager(this.settingsManager);
         this.betaFeatureManager = new BetaFeatureManager(this.settingsManager);
+        this.crossReference.setBetaFeatureManager(this.betaFeatureManager);
 
         // UI组件
         this.dockPanel = new DockPanel(
@@ -107,6 +152,9 @@ export default class DocumentStylerPlugin extends Plugin {
         this.crossReference.setPanelUpdateCallback(async () => {
             await this.dockPanel.updatePanel();
         });
+
+        // 注入“图片高度=行高”的CSS规则
+        this.styleManager.ensureImageLineHeightRule();
     }
 
     /**
@@ -617,6 +665,11 @@ export default class DocumentStylerPlugin extends Plugin {
      * 应用交叉引用（供DockPanel调用）
      */
     public async applyCrossReference(): Promise<void> {
+        // 检查是否为内测用户
+        if (!this.betaFeatureManager.isBetaVerified()) {
+            return;
+        }
+
         const protyle = this.documentManager.getCurrentProtyle();
         if (!protyle) return;
 
@@ -645,6 +698,11 @@ export default class DocumentStylerPlugin extends Plugin {
      * 手动触发交叉引用更新（供调试使用）
      */
     public async forceUpdateCrossReference(): Promise<void> {
+        // 检查是否为内测用户
+        if (!this.betaFeatureManager.isBetaVerified()) {
+            return;
+        }
+
         try {
             await this.crossReference.forceUpdate();
         } catch (error) {
@@ -663,14 +721,14 @@ export default class DocumentStylerPlugin extends Plugin {
             console.log(`DocumentStyler: 开始应用字体设置，文档ID: ${docId}`);
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
             console.log('DocumentStyler: 获取到文档设置', docSettings);
-            
+
             // 检查是否启用了字体自定义
             if (!docSettings.customFontEnabled) {
                 console.log('DocumentStyler: 字体自定义未启用，清除字体样式');
                 await this.fontStyleManager.clearDocumentStyles(docId);
                 return;
             }
-            
+
             await this.fontStyleManager.applyFontStyles(docId, docSettings.fontSettings);
             console.log('DocumentStyler: 字体设置应用完成');
         } catch (error) {
@@ -969,5 +1027,289 @@ export default class DocumentStylerPlugin extends Plugin {
     public getBetaFeatureManager(): BetaFeatureManager | null {
         return this.betaFeatureManager || null;
     }
+
+    // ==================== 新增命令的实现 ====================
+
+    /**
+     * 行内换行转多块：
+     * - 无选中：处理光标所在块
+     * - 仅选中文本：处理该文本所在块
+     * - 选中多块：依次处理所有选中块
+     */
+	private async handleSplitInlineBreaks(protyle: any): Promise<void> {
+        const blocks = this.getSelectedBlocks(protyle);
+        let total = 0;
+        if (blocks.length === 0) {
+            showMessage('未找到需要处理的块', 2000, 'info');
+            return;
+        }
+
+        for (const blockEl of blocks) {
+            const blockId = blockEl.getAttribute('data-node-id');
+            if (!blockId) continue;
+
+            const editable = blockEl.querySelector('[contenteditable="true"]') as HTMLElement | null;
+            if (!editable) continue;
+
+            // 基于 DOM Range 的换行拆分：严格保持合法结构
+            const htmlLines = this.splitEditableByBreaks(editable);
+
+            if (htmlLines.length <= 1) {
+                continue; // 无需拆分
+            }
+
+			// 更新第一个块为第一行：复制原块所有属性，仅覆盖 updated
+			const firstInner = this.buildParagraphInnerHTML(htmlLines[0]);
+			const firstAttr = this.buildBlockAttrString(blockEl, { updated: this.generateUpdatedTimestamp() });
+			const firstBlockDom = this.wrapBlockWithAttributes(firstAttr, firstInner);
+			await updateBlock('dom', firstBlockDom, blockId);
+
+			// 链式在该块之后插入后续行，保持原有顺序
+			let previousId: string = blockId;
+			for (let i = htmlLines.length - 1; i > 0; i--) {
+				const inner = this.buildParagraphInnerHTML(htmlLines[i]);
+				// 为新块复制原块属性，并生成新的 data-node-id 与 updated
+				const newId = this.generateBlockId();
+				const newAttr = this.buildBlockAttrString(blockEl, { 'data-node-id': newId, updated: this.generateUpdatedTimestamp() });
+				const blockDom = this.wrapBlockWithAttributes(newAttr, inner);
+				const ops = await insertBlock('dom', blockDom, undefined, previousId, undefined);
+				if (Array.isArray(ops) && ops.length > 0) {
+					const created = ops.find((op: any) => op.id);
+					if (created && created.id) {
+						previousId = created.id;
+					}
+				}
+			}
+
+            total += htmlLines.length;
+        }
+
+        showMessage(`已将行内换行转换为 ${total} 个块`, 2000, 'info');
+    }
+
+    /**
+     * 将选中范围内的图片设置为行高
+     * - 无选中：处理光标所在块
+     * - 仅选中文本：处理该文本所在块
+     * - 选中多块：依次处理所有选中块
+     */
+    private async handleSetImagesToLineHeight(protyle: any): Promise<void> {
+        const blocks = this.getSelectedBlocks(protyle);
+        if (blocks.length === 0) {
+            showMessage('未找到需要处理的块', 2000, 'info');
+            return;
+        }
+
+        // 汇总变更，使用事务批量提交（/api/block/updateBlocks）
+        const updates: Record<string, string> = {};
+        let changed = 0;
+
+        for (const blockEl of blocks) {
+            const blockId = blockEl.getAttribute('data-node-id');
+            if (!blockId) continue;
+
+            const editable = blockEl.querySelector('[contenteditable="true"]') as HTMLElement | null;
+            if (!editable) continue;
+
+            const beforeHTML = editable.innerHTML;
+
+            // 使用 DOM 方式查找并设置图片容器层级的宽度为 1lh
+            const temp = document.createElement('div');
+            temp.innerHTML = beforeHTML;
+
+            const imgs = Array.from(temp.querySelectorAll('span[contenteditable="false"][data-type="img"] img')) as HTMLImageElement[];
+            let localChanged = 0;
+            for (const img of imgs) {
+                const wrapper = img.parentElement as HTMLElement | null;
+                if (!wrapper || wrapper.tagName !== 'SPAN') continue;
+                if (wrapper.style.width !== 'calc(1lh - 8px)') {
+                    wrapper.style.width = 'calc(1lh - 8px)';
+                    localChanged++;
+                }
+            }
+
+			if (localChanged > 0) {
+				const afterHTML = temp.innerHTML;
+				if (afterHTML !== beforeHTML) {
+					const inner = this.buildParagraphInnerHTML(afterHTML, false);
+					// 保留原块所有属性，覆盖 updated
+					const attr = this.buildBlockAttrString(blockEl, { updated: this.generateUpdatedTimestamp() });
+					const blockDom = this.wrapBlockWithAttributes(attr, inner);
+					updates[blockId] = blockDom;
+					changed += localChanged;
+				}
+			}
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await batchUpdateBlockContent(updates, 'dom', true);
+        }
+
+        showMessage(changed > 0 ? `已为 ${changed} 个图片设置 width: 1lh` : '未找到需要设置的图片', 2000, 'info');
+    }
+
+    /**
+     * 获取当前选中的块列表；
+     * 若多选返回所有被框选的块；若仅光标或仅选中文本，返回所在块。
+     */
+    private getSelectedBlocks(protyle: any): HTMLElement[] {
+        const container = protyle?.wysiwyg?.element as HTMLElement | undefined;
+        if (!container) return [];
+
+        // 多块选择的标记
+        const selectedBlocks = Array.from(container.querySelectorAll('.protyle-wysiwyg--select')) as HTMLElement[];
+        if (selectedBlocks.length > 0) return selectedBlocks;
+
+        // 退化为光标所在块
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const anchor = selection.anchorNode as Node | null;
+            const block = anchor ? (anchor instanceof HTMLElement ? anchor : anchor.parentElement)?.closest('[data-node-id]') as HTMLElement | null : null;
+            if (block) return [block];
+        }
+        return [];
+    }
+
+    /**
+     * 构造段落块的内部 DOM（contenteditable + protyle-attr）
+     */
+	private buildParagraphInnerHTML(editableInnerHTML: string, ensureAttr: boolean = true): string {
+		const attrPart = `<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>`;
+		const editablePart = `<div contenteditable="true" spellcheck="false">${editableInnerHTML}</div>`;
+		return ensureAttr ? `${editablePart}${attrPart}` : `${editablePart}${attrPart}`;
+	}
+
+    /**
+	 * 生成块属性字符串：从现有块复制所有属性，可传入 overrides 覆盖，excludes 排除
+     */
+	private buildBlockAttrString(blockEl: HTMLElement, overrides: Record<string, string> = {}, excludes: string[] = []): string {
+		const names = blockEl.getAttributeNames();
+		const excludeSet = new Set(excludes.map(s => s.toLowerCase()));
+		const parts: string[] = [];
+		for (const name of names) {
+			if (excludeSet.has(name.toLowerCase())) continue;
+			const value = blockEl.getAttribute(name);
+			if (value === null) continue;
+			// 若在 overrides 中会在后续统一附加覆盖
+			if (Object.prototype.hasOwnProperty.call(overrides, name)) continue;
+			parts.push(`${name}="${value}"`);
+		}
+		// 附加覆盖项
+		for (const [k, v] of Object.entries(overrides)) {
+			parts.push(`${k}="${v}"`);
+		}
+		return parts.join(' ');
+	}
+
+	/**
+	 * 包裹为完整块 DOM，使用给定属性字符串
+	 */
+	private wrapBlockWithAttributes(attrString: string, innerHTML: string): string {
+		return `<div ${attrString}>${innerHTML}</div>`;
+	}
+
+
+
+	private generateUpdatedTimestamp(): string {
+		const d = new Date();
+		const pad = (n: number) => n.toString().padStart(2, '0');
+		return (
+			`${d.getFullYear()}` +
+			pad(d.getMonth() + 1) +
+			pad(d.getDate()) +
+			pad(d.getHours()) +
+			pad(d.getMinutes()) +
+			pad(d.getSeconds())
+		);
+	}
+
+	/**
+	 * 生成块 ID：YYYYMMDDHHmmss-xxxxxxx（小写字母数字）
+	 */
+	private generateBlockId(): string {
+		const ts = this.generateUpdatedTimestamp();
+		const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+		let suffix = '';
+		for (let i = 0; i < 7; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+		return `${ts}-${suffix}`;
+	}
+
+    /**
+     * 将可编辑区域按换行节点拆分为多个 HTML 片段（合法 DOM）
+     * 识别的换行标记：<span data-type="br"></span> 与 <br>
+     */
+	private splitEditableByBreaks(editable: HTMLElement): string[] {
+		// 在克隆的容器上操作：把文本节点中的 "\n" 转换为显式的换行标记，以统一处理
+		const working = editable.cloneNode(true) as HTMLElement;
+
+		// 收集所有文本节点（快照），避免遍历过程中结构修改导致迭代异常
+		const textNodes: Text[] = [];
+		const walker = document.createTreeWalker(working, NodeFilter.SHOW_TEXT);
+		let current: Node | null = walker.nextNode();
+		while (current) {
+			textNodes.push(current as Text);
+			current = walker.nextNode();
+		}
+
+		// 将文本中的换行符转换为 <span data-type="br"></span>
+		for (const textNode of textNodes) {
+			const value = textNode.nodeValue || '';
+			if (!value || value.indexOf('\n') === -1) continue;
+
+			const parts = value.split('\n');
+			const frag = document.createDocumentFragment();
+			for (let i = 0; i < parts.length; i++) {
+				if (parts[i]) {
+					frag.appendChild(document.createTextNode(parts[i]));
+				}
+				if (i < parts.length - 1) {
+					const brSpan = document.createElement('span');
+					brSpan.setAttribute('data-type', 'br');
+					frag.appendChild(brSpan);
+				}
+			}
+			textNode.parentNode?.replaceChild(frag, textNode);
+		}
+
+		// 现在工作容器中的所有换行都已显式化，继续使用统一的断点切分逻辑
+		const breaks = Array.from(working.querySelectorAll('span[data-type="br"], br')) as Node[];
+		const fragments: string[] = [];
+		const tmp = document.createElement('div');
+
+		const pushRangeHTML = (startNode: Node | null, endNode: Node | null) => {
+			const range = document.createRange();
+			if (startNode) {
+				range.setStartAfter(startNode);
+			} else {
+				range.setStart(working, 0);
+			}
+			if (endNode) {
+				range.setEndBefore(endNode);
+			} else {
+				range.setEnd(working, working.childNodes.length);
+			}
+			const frag = range.cloneContents();
+			tmp.innerHTML = '';
+			tmp.appendChild(frag);
+			const html = (tmp.innerHTML || '').trim();
+			if (html) fragments.push(html);
+		};
+
+		if (breaks.length === 0) {
+			const html = (working.innerHTML || '').trim();
+			return html ? [html] : [];
+		}
+
+		// 开头 -> 第一个换行前
+		pushRangeHTML(null, breaks[0]);
+		// 中间段
+		for (let i = 0; i < breaks.length - 1; i++) {
+			pushRangeHTML(breaks[i], breaks[i + 1]);
+		}
+		// 最后一个换行 -> 末尾
+		pushRangeHTML(breaks[breaks.length - 1], null);
+
+		return fragments;
+	}
 
 }

@@ -4,6 +4,7 @@
  */
 
 import { Custom } from "../utils/siyuan-api";
+import { showMessage } from "siyuan";
 import { IDockPanel, IFigureInfo, HeadingNumberStyle, IFontSettings } from "../types";
 import { SettingsManager } from "../core/SettingsManager";
 import { DocumentManager } from "../core/DocumentManager";
@@ -161,13 +162,13 @@ export class DockPanel implements IDockPanel {
                             <input class="b3-switch fn__flex-center" id="doc-heading-enabled" type="checkbox" checked="">
                         </label>
 
-                        <label class="fn__flex b3-label">
+                        <label class="fn__flex b3-label" style="${this.betaFeatureManager.isBetaVerified() ? '' : 'opacity: 0.5; pointer-events: none;'}">
                             <div class="fn__flex-1">
-                                交叉引用
-                                <div class="b3-label__text">为图片和表格添加编号标签</div>
+                                交叉引用${this.betaFeatureManager.isBetaVerified() ? '' : ' (内测功能)'}
+                                <div class="b3-label__text">${this.betaFeatureManager.isBetaVerified() ? '图表将获得类latex的全局自动编号，并支持引用' : '此功能仅对内测用户开放'}</div>
                             </div>
                             <span class="fn__space"></span>
-                            <input class="b3-switch fn__flex-center" id="doc-crossref-enabled" type="checkbox" checked="">
+                            <input class="b3-switch fn__flex-center" id="doc-crossref-enabled" type="checkbox" checked="" ${this.betaFeatureManager.isBetaVerified() ? '' : 'disabled'}>
                         </label>
 
                         <label class="fn__flex b3-label">
@@ -1022,6 +1023,14 @@ export class DockPanel implements IDockPanel {
 
         if (crossRefCheckbox) {
             const crossRefHandler = async (e: Event) => {
+                // 检查是否为内测用户
+                if (!this.betaFeatureManager.isBetaVerified()) {
+                    showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+                    // 恢复复选框状态
+                    (e.target as HTMLInputElement).checked = !(e.target as HTMLInputElement).checked;
+                    return;
+                }
+
                 // 实时获取当前文档ID，而不是使用闭包中的旧ID
                 const currentDocId = this.documentManager.getCurrentDocId();
                 if (!currentDocId) {
@@ -1103,6 +1112,12 @@ export class DockPanel implements IDockPanel {
         const docId = this.documentManager.getCurrentDocId();
         if (!docId) {
             listElement.innerHTML = '<div class="b3-list--empty">未选择文档</div>';
+            return;
+        }
+
+        // 检查是否为内测用户
+        if (!this.betaFeatureManager.isBetaVerified()) {
+            listElement.innerHTML = '<div class="b3-list--empty">交叉引用功能仅对内测用户开放</div>';
             return;
         }
 

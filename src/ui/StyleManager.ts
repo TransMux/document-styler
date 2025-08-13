@@ -8,6 +8,7 @@ import { IStyleManager, IHeadingNumberMap } from "../types";
 export class StyleManager implements IStyleManager {
     private readonly MAIN_STYLE_ID = 'document-styler-plugin-styles';
     private readonly HEADING_STYLE_ID = 'document-styler-heading-numbering';
+    private readonly IMG_LH_STYLE_ID = 'document-styler-img-lineheight';
 
     // 当前应用的编号映射
     private currentHeadingMap: IHeadingNumberMap = {};
@@ -31,6 +32,9 @@ export class StyleManager implements IStyleManager {
 
         const headingStyle = document.getElementById(this.HEADING_STYLE_ID);
         if (headingStyle) headingStyle.remove();
+
+        const imgLHStyle = document.getElementById(this.IMG_LH_STYLE_ID);
+        if (imgLHStyle) imgLHStyle.remove();
     }
 
     updateStyles(): void {
@@ -409,6 +413,29 @@ export class StyleManager implements IStyleManager {
      */
     isStyleLoaded(styleId: string): boolean {
         return document.getElementById(styleId) !== null;
+    }
+
+    /**
+     * 确保“图片高度=行高”的CSS已注入
+     * 使用 CSS 相对单位 1lh，使图片跟随行高变化，无需重复写入 inline style
+     */
+    ensureImageLineHeightRule(): void {
+        if (document.getElementById(this.IMG_LH_STYLE_ID)) return;
+
+        const css = `
+            /* 针对标记了 data-styler-img-lh="1" 的图片或图片容器应用 1lh 高度 */
+            .protyle-wysiwyg [data-styler-img-lh="1"] img,
+            .protyle-wysiwyg img[data-styler-img-lh="1"] {
+                height: 1lh;
+                max-height: 1lh;
+                width: auto;
+            }
+        `;
+
+        const styleEl = document.createElement('style');
+        styleEl.id = this.IMG_LH_STYLE_ID;
+        styleEl.textContent = css;
+        document.head.appendChild(styleEl);
     }
 
     /**

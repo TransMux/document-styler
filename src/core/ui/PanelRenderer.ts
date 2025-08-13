@@ -198,7 +198,7 @@ export class PanelRenderer {
                     <label class="fn__flex b3-label">
                         <div class="fn__flex-1">
                             交叉引用
-                            <div class="b3-label__text">为图片和表格添加编号标签</div>
+                            <div class="b3-label__text">图表将获得类latex的全局自动编号，并支持引用</div>
                         </div>
                         <span class="fn__space"></span>
                         <input class="b3-switch fn__flex-center" id="cross-ref-toggle" type="checkbox" checked="">
