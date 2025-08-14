@@ -228,7 +228,7 @@ export class BetaFeatureManager implements IBetaFeatureManager {
                                 this.currentDialog = null;
                                 this.openVerificationDialog();
                             }
-                        }, 1500);
+                        }, 500);
                     } else {
                         this.showMessage(messageDiv, '内测码无效，请检查后重试', 'error');
                     }
