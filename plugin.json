@@ -21,16 +21,16 @@
     "desktop-window"
   ],
   "displayName": {
-    "en_US": "Document Styler",
-    "zh_CN": "文档样式"
+    "en_US": "M - Document Styler",
+    "zh_CN": "M - 文档样式拓展"
   },
   "description": {
     "en_US": "Document Styler for Siyuan",
-    "zh_CN": "思源文档样式"
+    "zh_CN": "让思源胜任专业的报告写作（各种输出场景，例如日报，周报，月报）"
   },
   "readme": {
-    "en_US": "README.md",
-    "zh_CN": "README_zh_CN.md"
+    "zh_CN": "README.md",
+    "en_US": "README_en_US.md"
   },
   "funding": {
     "custom": [
