@@ -23,7 +23,7 @@
 
 这款插件的开发工作离不开你的喜爱和支持！在微信群中你可以得到更加及时的开发者反馈和帮助，同时也可以更早地访问正在开发的功能，请扫描二维码加群：
 
-![](https://vip.123pan.cn/1822388924/ymjew503t0m000d7w32xrzpv8jmos5xyDIYvDqD1BdrvAcxvAdY2Da==.png)
+![](https://vip.123pan.cn/1822388924/ymjew503t0m000d7w32xsau3534nh2j1DIYvDqD1BdrvAcxvAdY2Da==.png)
 
 ## 使用教程
 
