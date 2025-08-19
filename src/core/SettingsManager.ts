@@ -343,6 +343,7 @@ export class SettingsManager implements ISettingsManager {
             headingNumberingEnabled: false,
             crossReferenceEnabled: false,
             customFontEnabled: false,
+            showHeadingNumberInBlockAttr: true,
             numberingFormats: [...this.settings.numberingFormats],
             headingNumberStyles: [...this.settings.headingNumberStyles],
             figurePrefix: this.settings.figurePrefix,
@@ -482,6 +483,10 @@ export class SettingsManager implements ISettingsManager {
 
         if (typeof settings.customFontEnabled === 'boolean') {
             fixed.customFontEnabled = settings.customFontEnabled;
+        }
+
+        if (typeof settings.showHeadingNumberInBlockAttr === 'boolean') {
+            fixed.showHeadingNumberInBlockAttr = settings.showHeadingNumberInBlockAttr;
         }
 
         if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {

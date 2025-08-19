@@ -13,6 +13,8 @@ export class StyleManager implements IStyleManager {
     // 当前应用的编号映射
     private currentHeadingMap: IHeadingNumberMap = {};
     private currentFigureMap: Record<string, { number: string; type: 'image' | 'table' }> = {};
+    // 是否优先使用块属性/内容可编辑区域作为编号渲染目标
+    private preferBlockAttr: boolean = true;
 
     async init(): Promise<void> {
         this.loadStyles();
@@ -63,7 +65,6 @@ export class StyleManager implements IStyleManager {
             .document-styler-section {
                 margin-bottom: 24px;
                 border-bottom: 1px solid var(--b3-theme-surface-lighter);
-                padding-bottom: 16px;
             }
 
             .document-styler-section:last-child {
@@ -462,6 +463,13 @@ export class StyleManager implements IStyleManager {
     }
 
     /**
+     * 设置编号渲染目标偏好
+     */
+    setPreferBlockAttr(prefer: boolean): void {
+        this.preferBlockAttr = prefer;
+    }
+
+    /**
      * 清除标题编号样式
      */
     clearHeadingNumbering(): void {
@@ -544,7 +552,10 @@ export class StyleManager implements IStyleManager {
     private generateHeadingNumberingCSS(headingMap: IHeadingNumberMap): string {
         let css = '';
         for (const [blockId, number] of Object.entries(headingMap)) {
-            css += `.protyle-wysiwyg [data-node-id="${blockId}"] [contenteditable]::before {
+            const selector = this.preferBlockAttr
+                ? `.protyle-wysiwyg [data-node-id="${blockId}"] [contenteditable]::before`
+                : `.protyle-wysiwyg [data-node-id="${blockId}"] [spellcheck]::before`;
+            css += `${selector} {
                 content: "${number}";
                 margin-right: 4px;
                 color: var(--b3-theme-on-surface-light);

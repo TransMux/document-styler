@@ -187,6 +187,13 @@ export class DockPanel implements IDockPanel {
                         <div id="heading-styles-container">
                             ${this.generateHeadingStylesHTML(docSettings.numberingFormats, docSettings.headingNumberStyles)}
                         </div>
+                        <label class="fn__flex b3-label" style="margin-bottom: 8px;">
+                            <div class="fn__flex-1">
+                                是否在块属性显示（右上角）
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-heading-in-attr" type="checkbox" ${docSettings.showHeadingNumberInBlockAttr ? 'checked' : ''}>
+                        </label>
                     </div>
 
 
@@ -455,6 +462,28 @@ export class DockPanel implements IDockPanel {
                 formatInput.addEventListener('change', handler);
                 (formatInput as any)._documentStylerHandler = handler;
             }
+        }
+
+        // 标题编号显示位置开关
+        const headingInAttr = this.panelElement.querySelector('#doc-heading-in-attr') as HTMLInputElement;
+        if (headingInAttr) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+                const preferAttr = (e.target as HTMLInputElement).checked;
+                await this.settingsManager.setDocumentSettings(docId, { showHeadingNumberInBlockAttr: preferAttr });
+                // 重新应用标题编号以切换渲染目标
+                const latest = await this.settingsManager.getDocumentSettings(docId);
+                if (latest.headingNumberingEnabled) {
+                    this.debounceApplyHeadingNumbering();
+                }
+            };
+            // 先移除旧的事件再绑定，避免重复
+            if ((headingInAttr as any)._documentStylerHandler) {
+                headingInAttr.removeEventListener('change', (headingInAttr as any)._documentStylerHandler);
+            }
+            headingInAttr.addEventListener('change', handler);
+            (headingInAttr as any)._documentStylerHandler = handler;
         }
 
         // 图表编号前缀输入框
