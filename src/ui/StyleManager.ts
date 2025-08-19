@@ -56,6 +56,12 @@ export class StyleManager implements IStyleManager {
                 font-size: 14px;
             }
 
+            
+            /* label padding utility */
+            .label-padding {
+                padding: 16px 24px;
+            }
+
             .document-styler-content {
                 flex: 1;
                 padding: 16px;

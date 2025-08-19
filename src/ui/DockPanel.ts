@@ -153,7 +153,7 @@ export class DockPanel implements IDockPanel {
                     <div class="document-styler-section">
                         <h3 class="document-styler-section-title">当前文档状态</h3>
 
-                        <label class="fn__flex b3-label">
+                        <label class="fn__flex label-padding">
                             <div class="fn__flex-1">
                                 标题自动编号
                                 <div class="b3-label__text">启用标题编号功能</div>
@@ -162,7 +162,7 @@ export class DockPanel implements IDockPanel {
                             <input class="b3-switch fn__flex-center" id="doc-heading-enabled" type="checkbox" checked="">
                         </label>
 
-                        <label class="fn__flex b3-label" style="${this.betaFeatureManager.isBetaVerified() ? '' : 'opacity: 0.5; pointer-events: none;'}">
+                        <label class="fn__flex label-padding" style="${this.betaFeatureManager.isBetaVerified() ? '' : 'opacity: 0.5; pointer-events: none;'}">
                             <div class="fn__flex-1">
                                 交叉引用${this.betaFeatureManager.isBetaVerified() ? '' : ' (内测功能)'}
                                 <div class="b3-label__text">${this.betaFeatureManager.isBetaVerified() ? '图表将获得类latex的全局自动编号，并支持引用' : '此功能仅对内测用户开放'}</div>
@@ -171,7 +171,7 @@ export class DockPanel implements IDockPanel {
                             <input class="b3-switch fn__flex-center" id="doc-crossref-enabled" type="checkbox" checked="" ${this.betaFeatureManager.isBetaVerified() ? '' : 'disabled'}>
                         </label>
 
-                        <label class="fn__flex b3-label">
+                        <label class="fn__flex label-padding">
                             <div class="fn__flex-1">
                                 文章字体自定义
                                 <div class="b3-label__text">启用文档字体自定义功能</div>
@@ -187,7 +187,7 @@ export class DockPanel implements IDockPanel {
                         <div id="heading-styles-container">
                             ${this.generateHeadingStylesHTML(docSettings.numberingFormats, docSettings.headingNumberStyles)}
                         </div>
-                        <label class="fn__flex b3-label" style="margin-bottom: 8px;">
+                        <label class="fn__flex label-padding" style="margin-bottom: 8px;">
                             <div class="fn__flex-1">
                                 是否在块属性显示（右上角）
                             </div>
@@ -202,7 +202,7 @@ export class DockPanel implements IDockPanel {
                     <div class="document-styler-section" id="figure-prefix-section" style="${docSettings.crossReferenceEnabled ? '' : 'display: none;'}">
                         <h3 class="document-styler-section-title">图表编号前缀</h3>
 
-                        <div class="fn__flex b3-label config__item">
+                        <div class="fn__flex label-padding config__item">
                             <div class="fn__flex-1">
                                 图片编号前缀
                                 <div class="b3-label__text">自定义图片编号前缀，如"图"、"Figure"等</div>
@@ -211,7 +211,7 @@ export class DockPanel implements IDockPanel {
                             <input class="b3-text-field fn__flex-center fn__size200" id="figure-prefix-input" value="${docSettings.figurePrefix}" placeholder="图">
                         </div>
 
-                        <div class="fn__flex b3-label config__item">
+                        <div class="fn__flex label-padding config__item">
                             <div class="fn__flex-1">
                                 表格编号前缀
                                 <div class="b3-label__text">自定义表格编号前缀，如"表"、"Table"等</div>
@@ -292,7 +292,7 @@ export class DockPanel implements IDockPanel {
     private generateFontSettingsHTML(fontSettings: IFontSettings): string {
         return `
             <div class="document-styler-font-settings">
-                <div class="fn__flex b3-label config__item">
+                <div class="fn__flex label-padding config__item">
                     <div class="fn__flex-1">
                         字体族
                         <div class="b3-label__text">设置文档的字体族，留空使用系统默认</div>
@@ -304,7 +304,7 @@ export class DockPanel implements IDockPanel {
                     </select>
                 </div>
 
-                <div class="fn__flex b3-label config__item">
+                <div class="fn__flex label-padding config__item">
                     <div class="fn__flex-1">
                         字体大小
                         <div class="b3-label__text">设置文档的字体大小（px）</div>
@@ -324,7 +324,7 @@ export class DockPanel implements IDockPanel {
                     </div>
                 </div>
 
-                <div class="fn__flex b3-label config__item">
+                <div class="fn__flex label-padding config__item">
                     <div class="fn__flex-1">
                         行高
                         <div class="b3-label__text">设置文档的行高</div>
