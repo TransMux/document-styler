@@ -429,6 +429,15 @@ export default class DocumentStylerPlugin extends Plugin {
                 } else {
                     console.log('DocumentStyler: 收到WebSocket transactions消息，但当前文档ID为空，跳过处理');
                 }
+            } else if (data.cmd === 'savedoc') {
+                // 处理内核推送的 savedoc 消息：用于拖拽排序、块类型转换等保存导致的结构变化
+                const rootId = data?.data?.rootID;
+                if (this.currentDocId && rootId === this.currentDocId) {
+                    console.log(`DocumentStyler: 收到WebSocket savedoc消息，当前文档ID: ${this.currentDocId}`);
+                    if (typeof this.headingNumbering?.handleSaveDocMessage === 'function') {
+                        await this.headingNumbering.handleSaveDocMessage(data);
+                    }
+                }
             }
         } catch (error) {
             // 忽略解析错误，不是所有WebSocket消息都是JSON

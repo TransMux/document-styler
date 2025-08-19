@@ -8,7 +8,7 @@ import { SettingsManager } from "./SettingsManager";
 import { DocumentManager } from "./DocumentManager";
 import { StyleManager } from "../ui/StyleManager";
 import { getVersion, getDocumentOutline } from "../utils/apiUtils";
-import { NumberStyleConverter } from "../utils/numberStyleConverter";
+// import { NumberStyleConverter } from "../utils/numberStyleConverter";
 import { parseOutlineToNumberMap } from "../utils/outlineUtils";
 
 export class HeadingNumbering implements IHeadingNumbering {
@@ -19,6 +19,8 @@ export class HeadingNumbering implements IHeadingNumbering {
 
     // 简化缓存机制
     private numberMapCache: Map<string, IHeadingNumberMap> = new Map();
+    // 记录上次渲染时的标题 ID 集合，避免重复请求
+    private lastHeadingIdsPerDoc: Map<string, Set<string>> = new Map();
 
     constructor(
         settingsManager: SettingsManager,
@@ -166,6 +168,8 @@ export class HeadingNumbering implements IHeadingNumbering {
 
             // 更新缓存
             this.numberMapCache.set(cacheKey, numberMap);
+            // 记录最近一次渲染时的标题 ID
+            this.lastHeadingIdsPerDoc.set(docId, new Set(Object.keys(numberMap)));
 
             return numberMap;
         } catch (error) {
@@ -235,11 +239,7 @@ export class HeadingNumbering implements IHeadingNumbering {
      * 获取当前编号样式统计
      * @returns 样式统计信息
      */
-    getNumberingStats(): {
-        headingCount: number;
-        figureCount: number;
-        cssStats: ReturnType<typeof import("../utils/cssGenerator").CSSGenerator.getStats>;
-    } {
+    getNumberingStats(): { headingCount: number; figureCount: number } {
         return this.styleManager.getNumberingStats();
     }
 
@@ -324,5 +324,81 @@ export class HeadingNumbering implements IHeadingNumbering {
                 return false;
             });
         });
+    }
+
+    /**
+     * 处理 WebSocket savedoc 消息
+     * 支持两种情况：
+     * 1) 拖拽导致的内容更新（action: "move"，判断 id 是否为已知标题 id）
+     * 2) 标题转换为段落块（action: "update"，判断是否包含标题更新）
+     */
+    async handleSaveDocMessage(msg: any): Promise<void> {
+        try {
+            const rootId = msg?.data?.rootID;
+            const sources = msg?.data?.sources;
+            if (!rootId || !Array.isArray(sources) || sources.length === 0) return;
+
+            // 仅处理当前文档
+            const currentDocId = this.documentManager.getCurrentDocId();
+            if (!currentDocId || currentDocId !== rootId) return;
+
+            // 检查当前文档是否启用了标题编号
+            const isEnabled = await this.settingsManager.isDocumentHeadingNumberingEnabled(currentDocId);
+            if (!isEnabled) return;
+
+            const ops = sources[0];
+            const doOps: any[] = Array.isArray(ops?.doOperations) ? ops.doOperations : [];
+            const undoOps: any[] = Array.isArray(ops?.undoOperations) ? ops.undoOperations : [];
+
+            let needUpdate = false;
+
+            // 1) 检测 move：如果移动的 id 是已知的标题 id，则需要更新
+            const knownHeadingIds = this.getKnownHeadingIdsFromCache(currentDocId);
+            for (const op of doOps) {
+                if (op?.action === 'move' && op?.id && knownHeadingIds.has(op.id)) {
+                    needUpdate = true;
+                    break;
+                }
+            }
+
+            // 2) 检测 update：是否包含标题相关更新（标题变段落或段落变标题等都会影响编号）
+            if (!needUpdate) {
+                const containsHeadingChange = (operation: any) => {
+                    const data = operation?.data;
+                    if (typeof data !== 'string') return false;
+                    // 只要出现/消失 NodeHeading 都会影响
+                    return data.indexOf('data-type="NodeHeading"') > -1;
+                };
+                needUpdate = doOps.some(op => op?.action === 'update' && containsHeadingChange(op));
+                if (!needUpdate && undoOps.length > 0) {
+                    needUpdate = undoOps.some(op => op?.action === 'update' && containsHeadingChange(op));
+                }
+            }
+
+            if (needUpdate) {
+                this.clearDocumentCache(currentDocId);
+                await this.updateNumberingForDoc(currentDocId);
+            }
+        } catch (error) {
+            console.error('HeadingNumbering: 处理 savedoc 消息失败:', error);
+        }
+    }
+
+    private getKnownHeadingIdsFromCache(docId: string): Set<string> {
+        // 优先使用上次渲染记录
+        const recorded = this.lastHeadingIdsPerDoc.get(docId);
+        if (recorded && recorded.size > 0) return recorded;
+
+        // 回退：从编号映射缓存中提取（不触发任何新的请求）
+        for (const [key, map] of this.numberMapCache.entries()) {
+            if (key.startsWith(docId + '_')) {
+                const ids = new Set<string>(Object.keys(map));
+                if (ids.size > 0) {
+                    this.lastHeadingIdsPerDoc.set(docId, ids);
+                    return ids;
+                }
+            }
+        }
+        return new Set<string>();
     }
 }
