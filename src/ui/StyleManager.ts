@@ -369,6 +369,7 @@ export class StyleManager implements IStyleManager {
         collapsedHeight: string,
         activeId: string,
         groupIds: string[],
+        activeIndex: number,
     ): void {
         const styleId = `${this.IMG_STACK_STYLE_ID}-${docId}-${groupKey}`;
         let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
@@ -386,9 +387,30 @@ export class StyleManager implements IStyleManager {
             `).join('\n');
         } else {
             css = others.map(id => `
-                .protyle[data-doc-id="${docId}"] [data-node-id="${id}"] [contenteditable] { max-height: ${collapsedHeight}; overflow: hidden; }
+                .protyle[data-doc-id="${docId}"] [data-node-id="${id}"] [spellcheck] { max-height: ${collapsedHeight}; overflow: hidden; opacity: 0.55; filter: grayscale(0.6); }
             `).join('\n');
         }
+        const total = groupIds.length;
+        const badge = `${activeIndex + 1} / ${total}`;
+        css += `
+            .protyle[data-doc-id="${docId}"] [data-node-id="${activeId}"] [spellcheck] { position: relative; }
+            .protyle[data-doc-id="${docId}"] [data-node-id="${activeId}"] [spellcheck]::after {
+                content: "${badge}";
+                position: absolute;
+                right: 8px;
+                bottom: 8px;
+                padding: 2px 6px;
+                font-size: 12px;
+                line-height: 1;
+                border-radius: 999px;
+                background: var(--b3-theme-primary);
+                color: var(--b3-theme-on-primary);
+                box-shadow: 0 1px 2px rgba(0,0,0,.2);
+                opacity: .9;
+                pointer-events: none;
+            }
+            .protyle[data-doc-id="${docId}"] [data-node-id="${activeId}"] [contenteditable] img { filter: none; opacity: 1; }
+        `;
         styleEl.textContent = css;
     }
 

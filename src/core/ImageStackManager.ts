@@ -87,8 +87,8 @@ export class ImageStackManager {
         if (groupIds.length < 2) return;
         const groupKey = groupIds[0];
         this.groupStates.set(groupKey, { ids: groupIds, activeIndex: 0, mode, height: collapsedHeight });
-        // 初始样式：显示第一个，隐藏/收起其它
-        this.styleManager.setImageStackVisibility(docId, groupKey, mode, collapsedHeight, groupIds[0], groupIds);
+        // 初始样式：显示第一个，隐藏/收起其它，并显示指示
+        this.styleManager.setImageStackVisibility(docId, groupKey, mode, collapsedHeight, groupIds[0], groupIds, 0);
 
         // 绑定滚轮事件到每个块
         for (const block of groupBlocks) {
@@ -114,11 +114,16 @@ export class ImageStackManager {
         const state = this.groupStates.get(groupKey);
         if (!state) return;
         const { ids, mode, height } = state;
-        const nextIndex = (state.activeIndex + dir + ids.length) % ids.length;
+        let nextIndex = state.activeIndex + dir;
+        if (nextIndex < 0 || nextIndex >= ids.length) {
+            // 边界：不循环
+            nextIndex = Math.max(0, Math.min(ids.length - 1, nextIndex));
+            if (nextIndex === state.activeIndex) return; // 无变化直接返回
+        }
         state.activeIndex = nextIndex;
         this.groupStates.set(groupKey, state);
         const activeId = ids[nextIndex];
-        this.styleManager.setImageStackVisibility(docId, groupKey, mode, height, activeId, ids);
+        this.styleManager.setImageStackVisibility(docId, groupKey, mode, height, activeId, ids, nextIndex);
         // 滚动激活块到可视
         const protyle = this.documentManager.getCurrentProtyle();
         const container = protyle?.wysiwyg?.element as HTMLElement | undefined;

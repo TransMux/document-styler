@@ -190,11 +190,6 @@ export class DockPanel implements IDockPanel {
                         </label>
 
                         <div class="fn__flex label-padding" id="doc-imgstack-options" style="${docSettings.imageStackEnabled ? '' : 'display:none;'}">
-                            <div class="fn__flex-1">
-                                显示模式
-                                <div class="b3-label__text">隐藏其它图片，或将其收起为较低高度</div>
-                            </div>
-                            <span class="fn__space"></span>
                             <select class="b3-select fn__flex-center fn__size200" id="doc-imgstack-mode">
                                 <option value="hide" ${docSettings.imageStackMode === 'hide' ? 'selected' : ''}>隐藏其它</option>
                                 <option value="compact" ${docSettings.imageStackMode !== 'hide' ? 'selected' : ''}>收起提示</option>
