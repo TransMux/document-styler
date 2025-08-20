@@ -50,6 +50,20 @@ export interface IDocumentStylerSettings {
     figurePrefix: string;
     /** 表格编号前缀配置 */
     tablePrefix: string;
+    /** 文档默认：是否启用自定义字体 */
+    defaultCustomFontEnabled?: boolean;
+    /** 文档默认：字体设置 */
+    defaultFontSettings?: IFontSettings;
+    /** 文档默认：标题编号显示在块属性 */
+    defaultShowHeadingNumberInBlockAttr?: boolean;
+    /** 文档默认：在大纲中显示标题编号 */
+    defaultShowHeadingNumberInOutline?: boolean;
+    /** 文档默认：连续图片堆叠开关 */
+    defaultImageStackEnabled?: boolean;
+    /** 文档默认：连续图片堆叠模式 */
+    defaultImageStackMode?: 'hide' | 'compact';
+    /** 文档默认：收起高度 */
+    defaultImageStackCollapsedHeight?: string;
     /** 内测功能配置 */
     betaFeatures?: IBetaFeatureSettings;
 }

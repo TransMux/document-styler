@@ -384,6 +384,9 @@ export default class DocumentStylerPlugin extends Plugin {
             await this.applyCurrentDocumentSettings();
             // 应用图片堆叠
             await this.imageStackManager.applyForCurrentDocument();
+
+            // 刷新面板，确保状态与覆盖提示即时更新
+            await this.dockPanel.updatePanel();
         } catch (error) {
             console.error('DocumentStyler: 文档加载处理失败:', error);
         }
@@ -412,6 +415,11 @@ export default class DocumentStylerPlugin extends Plugin {
                 await this.headingNumbering.clearNumbering(null);
                 await this.crossReference.clearCrossReference(protyle);
                 this.fontStyleManager.clearAllStyles();
+
+                // 切换到全局模式，刷新面板提示
+                this.currentDocId = null;
+                this.documentManager.setNoActiveDocument();
+                await this.dockPanel.updatePanel();
             } else {
                 console.log(`DocumentStyler: 还有 ${this.activeProtyles.size} 个活跃的protyle，保留样式`);
             }

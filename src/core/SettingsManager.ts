@@ -32,6 +32,18 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
     ],
     figurePrefix: "图",
     tablePrefix: "表",
+    // 全局默认（文档级设置的默认值）
+    defaultCustomFontEnabled: false,
+    defaultFontSettings: {
+        fontFamily: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_FAMILY,
+        fontSize: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_SIZE,
+        lineHeight: FONT_SETTINGS_CONSTANTS.DEFAULT_LINE_HEIGHT,
+    },
+    defaultShowHeadingNumberInBlockAttr: true,
+    defaultShowHeadingNumberInOutline: false,
+    defaultImageStackEnabled: false,
+    defaultImageStackMode: 'compact',
+    defaultImageStackCollapsedHeight: '48px',
     betaFeatures: {
         isVerified: false,
         verifiedCodes: [],
@@ -327,7 +339,9 @@ export class SettingsManager implements ISettingsManager {
      * @returns 默认字体设置
      */
     getDefaultFontSettings(): IFontSettings {
-        return {
+        const s = this.settings as IDocumentStylerSettings;
+        const globalDefault = (s as any).defaultFontSettings as IFontSettings | undefined;
+        return globalDefault ? { ...globalDefault } : {
             fontFamily: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_FAMILY,
             fontSize: FONT_SETTINGS_CONSTANTS.DEFAULT_FONT_SIZE,
             lineHeight: FONT_SETTINGS_CONSTANTS.DEFAULT_LINE_HEIGHT,
@@ -340,19 +354,19 @@ export class SettingsManager implements ISettingsManager {
      */
     getDefaultDocumentSettings(): IDocumentStylerDocumentSettings {
         return {
-            headingNumberingEnabled: false,
-            crossReferenceEnabled: false,
-            customFontEnabled: false,
-            showHeadingNumberInBlockAttr: true,
-            showHeadingNumberInOutline: false,
+            headingNumberingEnabled: this.settings.headingNumbering,
+            crossReferenceEnabled: this.settings.crossReference,
+            customFontEnabled: (this.settings as any).defaultCustomFontEnabled ?? false,
+            showHeadingNumberInBlockAttr: (this.settings as any).defaultShowHeadingNumberInBlockAttr ?? true,
+            showHeadingNumberInOutline: (this.settings as any).defaultShowHeadingNumberInOutline ?? false,
             numberingFormats: [...this.settings.numberingFormats],
             headingNumberStyles: [...this.settings.headingNumberStyles],
             figurePrefix: this.settings.figurePrefix,
             tablePrefix: this.settings.tablePrefix,
             fontSettings: this.getDefaultFontSettings(),
-            imageStackEnabled: false,
-            imageStackMode: 'compact',
-            imageStackCollapsedHeight: '48px',
+            imageStackEnabled: (this.settings as any).defaultImageStackEnabled ?? false,
+            imageStackMode: (this.settings as any).defaultImageStackMode ?? 'compact',
+            imageStackCollapsedHeight: (this.settings as any).defaultImageStackCollapsedHeight ?? '48px',
         };
     }
 

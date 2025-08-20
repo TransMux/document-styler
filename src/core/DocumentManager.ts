@@ -28,6 +28,14 @@ export class DocumentManager implements IDocumentManager {
         this.documentCache.clear();
     }
 
+    /**
+     * 显式切换为无活跃文档状态
+     */
+    setNoActiveDocument(): void {
+        this.currentDocId = null;
+        this.currentProtyle = null;
+    }
+
     getCurrentDocId(): string | null {
         return this.currentDocId;
     }

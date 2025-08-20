@@ -87,6 +87,8 @@ export class DockPanel implements IDockPanel {
         try {
             await this.updateSettingsUI();
             await this.updateFiguresList();
+            // 刷新后重新绑定事件，确保切换全局/文档模式时交互正确
+            this.bindPanelEvents();
         } catch (error) {
             console.error('更新面板失败:', error);
         }
@@ -144,11 +146,14 @@ export class DockPanel implements IDockPanel {
                 <div class="block__icons">
                     <div class="block__logo">
                         <svg class="block__logoicon"><use xlink:href="#iconEdit"></use></svg>
-                        文档样式设置
+                        ${docId ? '文档样式设置' : '全局默认设置'}
                     </div>
                 </div>
                 
                 <div class="document-styler-content">
+                    <div id="global-mode-tip" class="document-styler-info" style="margin-bottom: 12px; display: ${docId ? 'none' : ''};">
+                        当前未打开文档，所做更改将作为全局默认设置应用。
+                    </div>
                     <!-- 当前文档状态 -->
                     <div class="document-styler-section">
                         <h3 class="document-styler-section-title">当前文档状态</h3>
@@ -196,6 +201,7 @@ export class DockPanel implements IDockPanel {
                             </select>
                             <input class="b3-text-field fn__flex-center fn__size120" id="doc-imgstack-height" value="${docSettings.imageStackCollapsedHeight || '48px'}" placeholder="48px">
                         </div>
+                        <div id="doc-override-tip" class="document-styler-info" style="display:none; margin: 0 24px 12px;">当前文档设置已覆盖全局默认设置</div>
                     </div>
 
                     <!-- 标题编号样式设置 -->
@@ -219,6 +225,7 @@ export class DockPanel implements IDockPanel {
                             <span class="fn__space"></span>
                             <input class="b3-switch fn__flex-center" id="doc-heading-in-outline" type="checkbox" ${docSettings.showHeadingNumberInOutline ? 'checked' : ''}>
                         </label>
+                        <div id="override-tip" class="document-styler-info" style="display:none; margin: 8px 24px 0;">当前文档设置已覆盖全局默认设置</div>
                     </div>
 
 
@@ -255,6 +262,7 @@ export class DockPanel implements IDockPanel {
                             </button>
                         </div>
                         ${this.generateFontSettingsHTML(docSettings.fontSettings)}
+                        ${docId ? '<div id="font-override-tip" class="document-styler-info" style="display:none; margin-top: 8px;">当前文档字体设置已覆盖全局默认</div>' : ''}
                     </div>
 
                     <!-- 图片表格列表 -->
@@ -430,11 +438,22 @@ export class DockPanel implements IDockPanel {
         // 清除之前的事件监听器
         this.clearPanelEvents();
 
-        // 绑定字体设置事件
-        this.bindFontSettingsEvents();
+        // 根据是否有文档，绑定不同的事件
+        const currentDocId = this.documentManager.getCurrentDocId();
+
+        // 绑定字体与图片堆叠设置事件（支持文档级与全局级）
+        if (currentDocId) {
+            this.bindFontSettingsEvents();
+            this.bindImageStackEvents();
+        } else {
+            this.bindGlobalFontSettingsEvents();
+            this.bindGlobalImageStackEvents();
+        }
 
         // 绑定重置字体设置事件
-        this.bindResetFontSettingsEvent();
+        if (currentDocId) {
+            this.bindResetFontSettingsEvent();
+        }
 
         // 绑定内测功能事件
         this.bindBetaFeatureEvents();
@@ -444,19 +463,18 @@ export class DockPanel implements IDockPanel {
             const styleSelect = this.panelElement.querySelector(`#heading-style-${i}`) as HTMLSelectElement;
             if (styleSelect) {
                 const handler = async (e: Event) => {
-                    const docId = this.documentManager.getCurrentDocId();
-                    if (!docId) return;
-
                     const style = (e.target as HTMLSelectElement).value as HeadingNumberStyle;
                     console.log(`DocumentStyler: 标题编号样式改变 - 级别${i + 1}, 样式: ${style}`);
-
-                    await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
-                    this.updateStyleExample(i, style);
-
-                    // 如果标题编号功能已启用，使用防抖更新，只应用标题编号
-                    const docSettings = await this.settingsManager.getDocumentSettings(docId);
-                    if (docSettings.headingNumberingEnabled) {
-                        this.debounceApplyHeadingNumbering();
+                    const docId = this.documentManager.getCurrentDocId();
+                    if (docId) {
+                        await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
+                        this.updateStyleExample(i, style);
+                        const docSettings = await this.settingsManager.getDocumentSettings(docId);
+                        if (docSettings.headingNumberingEnabled) {
+                            this.debounceApplyHeadingNumbering();
+                        }
+                    } else {
+                        await this.settingsManager.setHeadingNumberStyle(i, style);
                     }
                 };
                 styleSelect.addEventListener('change', handler);
@@ -470,18 +488,17 @@ export class DockPanel implements IDockPanel {
             const formatInput = this.panelElement.querySelector(`#format-${i}`) as HTMLInputElement;
             if (formatInput) {
                 const handler = async (e: Event) => {
-                    const docId = this.documentManager.getCurrentDocId();
-                    if (!docId) return;
-
                     const format = (e.target as HTMLInputElement).value;
                     console.log(`DocumentStyler: 编号格式改变 - 级别${i + 1}, 格式: ${format}`);
-
-                    await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
-
-                    // 如果标题编号功能已启用，使用防抖更新，只应用标题编号
-                    const docSettings = await this.settingsManager.getDocumentSettings(docId);
-                    if (docSettings.headingNumberingEnabled) {
-                        this.debounceApplyHeadingNumbering();
+                    const docId = this.documentManager.getCurrentDocId();
+                    if (docId) {
+                        await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
+                        const docSettings = await this.settingsManager.getDocumentSettings(docId);
+                        if (docSettings.headingNumberingEnabled) {
+                            this.debounceApplyHeadingNumbering();
+                        }
+                    } else {
+                        await this.settingsManager.setNumberingFormat(i, format);
                     }
                 };
                 formatInput.addEventListener('change', handler);
@@ -489,7 +506,7 @@ export class DockPanel implements IDockPanel {
             }
         }
 
-        // 标题编号显示位置开关
+        // 标题编号显示位置开关（仅文档级；全局模式禁用）
         const headingInAttr = this.panelElement.querySelector('#doc-heading-in-attr') as HTMLInputElement;
         if (headingInAttr) {
             const handler = async (e: Event) => {
@@ -511,7 +528,7 @@ export class DockPanel implements IDockPanel {
             (headingInAttr as any)._documentStylerHandler = handler;
         }
 
-        // 大纲编号显示开关
+        // 大纲编号显示开关（仅文档级；全局模式禁用）
         const headingInOutline = this.panelElement.querySelector('#doc-heading-in-outline') as HTMLInputElement;
         if (headingInOutline) {
             const handler = async (e: Event) => {
@@ -536,14 +553,15 @@ export class DockPanel implements IDockPanel {
         const figurePrefixInput = this.panelElement.querySelector('#figure-prefix-input') as HTMLInputElement;
         if (figurePrefixInput) {
             const handler = async (e: Event) => {
-                const docId = this.documentManager.getCurrentDocId();
-                if (!docId) return;
-
                 const prefix = (e.target as HTMLInputElement).value;
                 console.log(`DocumentStyler: 图片编号前缀改变: ${prefix}`);
-
-                await this.settingsManager.setDocumentFigurePrefix(docId, prefix);
-                await this.applyCrossReferenceSettings(docId, true);
+                const docId = this.documentManager.getCurrentDocId();
+                if (docId) {
+                    await this.settingsManager.setDocumentFigurePrefix(docId, prefix);
+                    await this.applyCrossReferenceSettings(docId, true);
+                } else {
+                    await this.settingsManager.updateSettings({ figurePrefix: prefix });
+                }
             };
             figurePrefixInput.addEventListener('change', handler);
             (figurePrefixInput as any)._documentStylerHandler = handler;
@@ -552,27 +570,26 @@ export class DockPanel implements IDockPanel {
         const tablePrefixInput = this.panelElement.querySelector('#table-prefix-input') as HTMLInputElement;
         if (tablePrefixInput) {
             const handler = async (e: Event) => {
-                const docId = this.documentManager.getCurrentDocId();
-                if (!docId) return;
-
                 const prefix = (e.target as HTMLInputElement).value;
                 console.log(`DocumentStyler: 表格编号前缀改变: ${prefix}`);
-
-                await this.settingsManager.setDocumentTablePrefix(docId, prefix);
-                await this.applyCrossReferenceSettings(docId, true);
+                const docId = this.documentManager.getCurrentDocId();
+                if (docId) {
+                    await this.settingsManager.setDocumentTablePrefix(docId, prefix);
+                    await this.applyCrossReferenceSettings(docId, true);
+                } else {
+                    await this.settingsManager.updateSettings({ tablePrefix: prefix });
+                }
             };
             tablePrefixInput.addEventListener('change', handler);
             (tablePrefixInput as any)._documentStylerHandler = handler;
         }
 
-        // 绑定文档状态事件
-        const currentDocId = this.documentManager.getCurrentDocId();
+        // 绑定状态事件（文档/全局）
         if (currentDocId) {
             this.bindDocumentStatusEvents(currentDocId);
+        } else {
+            this.bindGlobalStatusEvents();
         }
-
-        // 绑定图片堆叠设置事件
-        this.bindImageStackEvents();
     }
 
     /**
@@ -750,6 +767,165 @@ export class DockPanel implements IDockPanel {
             };
             resetButton.addEventListener('click', handler);
             (resetButton as any)._documentStylerHandler = handler;
+        }
+    }
+
+    /**
+     * 绑定全局字体设置事件
+     */
+    private bindGlobalFontSettingsEvents(): void {
+        if (!this.panelElement) return;
+
+        // 字体族选择器（全局默认）
+        const fontFamilySelect = this.panelElement.querySelector('#font-family-select') as HTMLSelectElement | null;
+        if (fontFamilySelect) {
+            const handler = async (e: Event) => {
+                const val = (e.target as HTMLSelectElement).value || '';
+                const s = this.settingsManager.getSettings() as any;
+                const prev = (s.defaultFontSettings || this.settingsManager.getDefaultFontSettings()) as any;
+                await this.settingsManager.updateSettings({ defaultFontSettings: { ...prev, fontFamily: val } as any });
+                await this.updatePanel();
+            };
+            fontFamilySelect.addEventListener('change', handler);
+            (fontFamilySelect as any)._documentStylerHandler = handler;
+        }
+
+        // 字体大小
+        const fontSizeInput = this.panelElement.querySelector('#font-size-input') as HTMLInputElement | null;
+        if (fontSizeInput) {
+            const handler = async (e: Event) => {
+                const px = ((e.target as HTMLInputElement).value || '16') + 'px';
+                const s = this.settingsManager.getSettings() as any;
+                const prev = (s.defaultFontSettings || this.settingsManager.getDefaultFontSettings()) as any;
+                await this.settingsManager.updateSettings({ defaultFontSettings: { ...prev, fontSize: px } as any });
+                await this.updatePanel();
+            };
+            fontSizeInput.addEventListener('change', handler);
+            (fontSizeInput as any)._documentStylerHandler = handler;
+        }
+
+        const decBtn = this.panelElement.querySelector('#font-size-decrease') as HTMLButtonElement | null;
+        if (decBtn) {
+            const handler = async () => {
+                const input = this.panelElement!.querySelector('#font-size-input') as HTMLInputElement | null;
+                if (!input) return;
+                const cur = parseInt(input.value) || 16;
+                const next = Math.max(8, cur - 1);
+                input.value = String(next);
+                const s = this.settingsManager.getSettings() as any;
+                const prev = (s.defaultFontSettings || this.settingsManager.getDefaultFontSettings()) as any;
+                await this.settingsManager.updateSettings({ defaultFontSettings: { ...prev, fontSize: next + 'px' } as any });
+                await this.updatePanel();
+            };
+            decBtn.addEventListener('click', handler);
+            (decBtn as any)._documentStylerHandler = handler;
+        }
+
+        const incBtn = this.panelElement.querySelector('#font-size-increase') as HTMLButtonElement | null;
+        if (incBtn) {
+            const handler = async () => {
+                const input = this.panelElement!.querySelector('#font-size-input') as HTMLInputElement | null;
+                if (!input) return;
+                const cur = parseInt(input.value) || 16;
+                const next = Math.min(72, cur + 1);
+                input.value = String(next);
+                const s = this.settingsManager.getSettings() as any;
+                const prev = (s.defaultFontSettings || this.settingsManager.getDefaultFontSettings()) as any;
+                await this.settingsManager.updateSettings({ defaultFontSettings: { ...prev, fontSize: next + 'px' } as any });
+                await this.updatePanel();
+            };
+            incBtn.addEventListener('click', handler);
+            (incBtn as any)._documentStylerHandler = handler;
+        }
+
+        // 行高
+        const lineHeightInput = this.panelElement.querySelector('#line-height-input') as HTMLInputElement | null;
+        if (lineHeightInput) {
+            const handler = async (e: Event) => {
+                const lh = (e.target as HTMLInputElement).value || '1.6';
+                const s = this.settingsManager.getSettings() as any;
+                const prev = (s.defaultFontSettings || this.settingsManager.getDefaultFontSettings()) as any;
+                await this.settingsManager.updateSettings({ defaultFontSettings: { ...prev, lineHeight: lh } as any });
+                await this.updatePanel();
+            };
+            lineHeightInput.addEventListener('change', handler);
+            (lineHeightInput as any)._documentStylerHandler = handler;
+        }
+
+        const lhDec = this.panelElement.querySelector('#line-height-decrease') as HTMLButtonElement | null;
+        if (lhDec) {
+            const handler = async () => {
+                const input = this.panelElement!.querySelector('#line-height-input') as HTMLInputElement | null;
+                if (!input) return;
+                const cur = parseFloat(input.value || '1.6') || 1.6;
+                const next = Math.max(1.0, Math.round((cur - 0.1) * 10) / 10);
+                input.value = next.toFixed(1);
+                const s = this.settingsManager.getSettings() as any;
+                const prev = (s.defaultFontSettings || this.settingsManager.getDefaultFontSettings()) as any;
+                await this.settingsManager.updateSettings({ defaultFontSettings: { ...prev, lineHeight: String(next) } as any });
+                await this.updatePanel();
+            };
+            lhDec.addEventListener('click', handler);
+            (lhDec as any)._documentStylerHandler = handler;
+        }
+
+        const lhInc = this.panelElement.querySelector('#line-height-increase') as HTMLButtonElement | null;
+        if (lhInc) {
+            const handler = async () => {
+                const input = this.panelElement!.querySelector('#line-height-input') as HTMLInputElement | null;
+                if (!input) return;
+                const cur = parseFloat(input.value || '1.6') || 1.6;
+                const next = Math.min(3.0, Math.round((cur + 0.1) * 10) / 10);
+                input.value = next.toFixed(1);
+                const s = this.settingsManager.getSettings() as any;
+                const prev = (s.defaultFontSettings || this.settingsManager.getDefaultFontSettings()) as any;
+                await this.settingsManager.updateSettings({ defaultFontSettings: { ...prev, lineHeight: String(next) } as any });
+                await this.updatePanel();
+            };
+            lhInc.addEventListener('click', handler);
+            (lhInc as any)._documentStylerHandler = handler;
+        }
+    }
+
+    /**
+     * 绑定全局图片堆叠设置事件
+     */
+    private bindGlobalImageStackEvents(): void {
+        if (!this.panelElement) return;
+        const enabledEl = this.panelElement.querySelector('#doc-imgstack-enabled') as HTMLInputElement | null;
+        const modeEl = this.panelElement.querySelector('#doc-imgstack-mode') as HTMLSelectElement | null;
+        const heightEl = this.panelElement.querySelector('#doc-imgstack-height') as HTMLInputElement | null;
+        const optionsRow = this.panelElement.querySelector('#doc-imgstack-options') as HTMLElement | null;
+
+        if (enabledEl) {
+            const handler = async (e: Event) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                await this.settingsManager.updateSettings({ defaultImageStackEnabled: enabled });
+                if (optionsRow) optionsRow.style.display = enabled ? '' : 'none';
+                await this.updatePanel();
+            };
+            enabledEl.addEventListener('change', handler);
+            (enabledEl as any)._documentStylerHandler = handler;
+        }
+
+        if (modeEl) {
+            const handler = async (e: Event) => {
+                const mode = (e.target as HTMLSelectElement).value as any;
+                await this.settingsManager.updateSettings({ defaultImageStackMode: mode });
+                await this.updatePanel();
+            };
+            modeEl.addEventListener('change', handler);
+            (modeEl as any)._documentStylerHandler = handler;
+        }
+
+        if (heightEl) {
+            const handler = async (e: Event) => {
+                const height = (e.target as HTMLInputElement).value || '48px';
+                await this.settingsManager.updateSettings({ defaultImageStackCollapsedHeight: height });
+                await this.updatePanel();
+            };
+            heightEl.addEventListener('change', handler);
+            (heightEl as any)._documentStylerHandler = handler;
         }
     }
 
@@ -1033,45 +1209,137 @@ export class DockPanel implements IDockPanel {
         if (!this.panelElement) return;
 
         const docId = this.documentManager.getCurrentDocId();
-        if (!docId) return;
 
         try {
-            const docSettings = await this.settingsManager.getDocumentSettings(docId);
+            const globalSettings = this.settingsManager.getSettings();
+            let docSettings = docId
+                ? await this.settingsManager.getDocumentSettings(docId)
+                : this.settingsManager.getDefaultDocumentSettings();
+            const defaultDocSettings = this.settingsManager.getDefaultDocumentSettings();
 
-            // 更新当前文档状态显示
-            await this.updateCurrentDocumentStatus(docId);
+            // 更新当前状态显示（文档或全局）
+            if (docId) {
+                await this.updateCurrentDocumentStatus(docId);
+            } else {
+                // 全局模式：复用当前文档状态区域，但绑定与显示基于全局
+                const headingCheckbox = this.panelElement.querySelector('#doc-heading-enabled') as HTMLInputElement | null;
+                if (headingCheckbox) headingCheckbox.checked = !!globalSettings.headingNumbering;
 
-            // 更新编号格式和样式
-            for (let i = 0; i < 6; i++) {
-                const formatInput = this.panelElement.querySelector(`#format-${i}`) as HTMLInputElement;
-                if (formatInput) formatInput.value = docSettings.numberingFormats[i];
+                const crossRefCheckbox = this.panelElement.querySelector('#doc-crossref-enabled') as HTMLInputElement | null;
+                if (crossRefCheckbox) crossRefCheckbox.checked = !!globalSettings.crossReference;
 
-                const styleSelect = this.panelElement.querySelector(`#heading-style-${i}`) as HTMLSelectElement;
-                if (styleSelect) styleSelect.value = docSettings.headingNumberStyles[i];
+                const customFontCheckbox = this.panelElement.querySelector('#doc-custom-font-enabled') as HTMLInputElement | null;
+                if (customFontCheckbox) {
+                    const defaultCF = (globalSettings as any).defaultCustomFontEnabled ?? false;
+                    customFontCheckbox.checked = !!defaultCF;
+                    customFontCheckbox.disabled = false;
+                }
             }
 
-            // 更新字体设置
+            // 切换全局模式提示显隐
+            const globalTip = this.panelElement.querySelector('#global-mode-tip') as HTMLElement | null;
+            if (globalTip) globalTip.style.display = docId ? 'none' : '';
+
+            // 更新编号格式和样式（文档或全局）
+            for (let i = 0; i < 6; i++) {
+                const formatInput = this.panelElement.querySelector(`#format-${i}`) as HTMLInputElement;
+                if (formatInput) formatInput.value = (docId ? docSettings.numberingFormats[i] : globalSettings.numberingFormats[i]);
+
+                const styleSelect = this.panelElement.querySelector(`#heading-style-${i}`) as HTMLSelectElement;
+                if (styleSelect) styleSelect.value = (docId ? docSettings.headingNumberStyles[i] : globalSettings.headingNumberStyles[i]);
+            }
+
+            // 更新字体设置（文档模式才可编辑）
             await this.updateFontSettingsUI(docSettings.fontSettings);
+            const globalCF = (globalSettings as any).defaultCustomFontEnabled ?? false;
+            this.toggleFontSettingsSection(docId ? docSettings.customFontEnabled : globalCF);
 
-            // 更新节的显示状态
-            this.toggleHeadingStylesSection(docSettings.headingNumberingEnabled);
-            this.toggleNumberingFormatsSection(docSettings.headingNumberingEnabled);
-            this.toggleFiguresSection(docSettings.crossReferenceEnabled);
-            this.toggleFontSettingsSection(docSettings.customFontEnabled);
+            // 更新节显示状态
+            const headingEnabled = docId ? docSettings.headingNumberingEnabled : globalSettings.headingNumbering;
+            this.toggleHeadingStylesSection(headingEnabled);
+            this.toggleNumberingFormatsSection(headingEnabled);
 
-            // 更新大纲开关显示状态
+            const crossRefEnabled = docId ? docSettings.crossReferenceEnabled : globalSettings.crossReference;
+            this.toggleFiguresSection(crossRefEnabled);
+
+            // 大纲/块属性开关（全局模式禁用）
             const outlineSwitch = this.panelElement.querySelector('#doc-heading-in-outline') as HTMLInputElement | null;
-            if (outlineSwitch) outlineSwitch.checked = !!docSettings.showHeadingNumberInOutline;
+            if (outlineSwitch) {
+                if (docId) {
+                    outlineSwitch.checked = !!docSettings.showHeadingNumberInOutline;
+                    outlineSwitch.disabled = false;
+                } else {
+                    outlineSwitch.checked = !!(globalSettings as any).defaultShowHeadingNumberInOutline;
+                    outlineSwitch.disabled = false;
+                }
+            }
+            const attrSwitch = this.panelElement.querySelector('#doc-heading-in-attr') as HTMLInputElement | null;
+            if (attrSwitch) {
+                if (docId) {
+                    attrSwitch.checked = !!docSettings.showHeadingNumberInBlockAttr;
+                    attrSwitch.disabled = false;
+                } else {
+                    attrSwitch.checked = !!(globalSettings as any).defaultShowHeadingNumberInBlockAttr;
+                    attrSwitch.disabled = false;
+                }
+            }
 
-            // 更新图片堆叠设置 UI
+            // 图片堆叠（全局模式禁用设置）
             const imgStackEnabled = this.panelElement.querySelector('#doc-imgstack-enabled') as HTMLInputElement | null;
-            if (imgStackEnabled) imgStackEnabled.checked = !!docSettings.imageStackEnabled;
+            if (imgStackEnabled) {
+                if (docId) {
+                    imgStackEnabled.checked = !!docSettings.imageStackEnabled;
+                    imgStackEnabled.disabled = false;
+                } else {
+                    imgStackEnabled.checked = !!(globalSettings as any).defaultImageStackEnabled;
+                    imgStackEnabled.disabled = false;
+                }
+            }
             const imgStackMode = this.panelElement.querySelector('#doc-imgstack-mode') as HTMLSelectElement | null;
-            if (imgStackMode) imgStackMode.value = (docSettings.imageStackMode === 'hide' ? 'hide' : 'compact');
+            if (imgStackMode) {
+                if (docId) {
+                    imgStackMode.value = (docSettings.imageStackMode === 'hide' ? 'hide' : 'compact');
+                    imgStackMode.disabled = false;
+                } else {
+                    const v = (globalSettings as any).defaultImageStackMode;
+                    imgStackMode.value = (v === 'hide' ? 'hide' : 'compact');
+                    imgStackMode.disabled = false;
+                }
+            }
             const imgStackHeight = this.panelElement.querySelector('#doc-imgstack-height') as HTMLInputElement | null;
-            if (imgStackHeight) imgStackHeight.value = docSettings.imageStackCollapsedHeight || '48px';
+            if (imgStackHeight) {
+                if (docId) {
+                    imgStackHeight.value = docSettings.imageStackCollapsedHeight || '48px';
+                    imgStackHeight.disabled = false;
+                } else {
+                    imgStackHeight.value = (globalSettings as any).defaultImageStackCollapsedHeight || '48px';
+                    imgStackHeight.disabled = false;
+                }
+            }
             const imgStackRow = this.panelElement.querySelector('#doc-imgstack-options') as HTMLElement | null;
-            if (imgStackRow) imgStackRow.style.display = docSettings.imageStackEnabled ? '' : 'none';
+            if (imgStackRow) imgStackRow.style.display = ((docId ? docSettings.imageStackEnabled : ((globalSettings as any).defaultImageStackEnabled ?? false)) ? '' : 'none');
+
+            // 覆盖提示（仅文档模式）：与当前全局默认派生的默认文档设置比较
+            const isOverridden = !!docId && (
+                docSettings.headingNumberingEnabled !== defaultDocSettings.headingNumberingEnabled ||
+                docSettings.crossReferenceEnabled !== defaultDocSettings.crossReferenceEnabled ||
+                JSON.stringify(docSettings.numberingFormats) !== JSON.stringify(defaultDocSettings.numberingFormats) ||
+                JSON.stringify(docSettings.headingNumberStyles) !== JSON.stringify(defaultDocSettings.headingNumberStyles) ||
+                docSettings.figurePrefix !== defaultDocSettings.figurePrefix ||
+                docSettings.tablePrefix !== defaultDocSettings.tablePrefix ||
+                (!!docSettings.customFontEnabled) !== (!!defaultDocSettings.customFontEnabled) ||
+                JSON.stringify(docSettings.fontSettings || {}) !== JSON.stringify(defaultDocSettings.fontSettings || {}) ||
+                (!!docSettings.imageStackEnabled) !== (!!defaultDocSettings.imageStackEnabled) ||
+                (docSettings.imageStackMode || 'compact') !== (defaultDocSettings.imageStackMode || 'compact') ||
+                (docSettings.imageStackCollapsedHeight || '48px') !== (defaultDocSettings.imageStackCollapsedHeight || '48px')
+            );
+
+            const overrideTip = this.panelElement.querySelector('#override-tip') as HTMLElement | null;
+            if (overrideTip) overrideTip.style.display = isOverridden ? '' : 'none';
+            const docOverrideTip = this.panelElement.querySelector('#doc-override-tip') as HTMLElement | null;
+            if (docOverrideTip) docOverrideTip.style.display = isOverridden ? '' : 'none';
+            const fontOverrideTip = this.panelElement.querySelector('#font-override-tip') as HTMLElement | null;
+            if (fontOverrideTip) fontOverrideTip.style.display = isOverridden ? '' : 'none';
         } catch (error) {
             console.error('更新设置UI失败:', error);
         }
@@ -1234,6 +1502,75 @@ export class DockPanel implements IDockPanel {
             };
             customFontCheckbox.addEventListener('change', customFontHandler);
             (customFontCheckbox as any)._documentStylerHandler = customFontHandler;
+        }
+    }
+
+    /**
+     * 绑定全局状态事件（无文档时）
+     */
+    private bindGlobalStatusEvents(): void {
+        if (!this.panelElement) return;
+
+        // 先清除可能已有的事件
+        this.clearDocumentStatusEvents();
+
+        const headingCheckbox = this.panelElement.querySelector('#doc-heading-enabled') as HTMLInputElement | null;
+        const crossRefCheckbox = this.panelElement.querySelector('#doc-crossref-enabled') as HTMLInputElement | null;
+        const headingInAttr = this.panelElement.querySelector('#doc-heading-in-attr') as HTMLInputElement | null;
+        const headingInOutline = this.panelElement.querySelector('#doc-heading-in-outline') as HTMLInputElement | null;
+        const customFontCheckbox = this.panelElement.querySelector('#doc-custom-font-enabled') as HTMLInputElement | null;
+
+        if (headingCheckbox) {
+            const handler = async (e: Event) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 全局标题编号开关改变 - 启用: ${enabled}`);
+                await this.settingsManager.updateSettings({ headingNumbering: enabled });
+                await this.updatePanel();
+            };
+            headingCheckbox.addEventListener('change', handler);
+            (headingCheckbox as any)._documentStylerHandler = handler;
+        }
+
+        if (crossRefCheckbox) {
+            const handler = async (e: Event) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                console.log(`DocumentStyler: 全局交叉引用开关改变 - 启用: ${enabled}`);
+                await this.settingsManager.updateSettings({ crossReference: enabled });
+                await this.updatePanel();
+            };
+            crossRefCheckbox.addEventListener('change', handler);
+            (crossRefCheckbox as any)._documentStylerHandler = handler;
+        }
+
+        if (headingInAttr) {
+            const handler = async (e: Event) => {
+                const preferAttr = (e.target as HTMLInputElement).checked;
+                await this.settingsManager.updateSettings({ defaultShowHeadingNumberInBlockAttr: preferAttr } as any);
+                await this.updatePanel();
+            };
+            headingInAttr.addEventListener('change', handler);
+            (headingInAttr as any)._documentStylerHandler = handler;
+        }
+
+        if (headingInOutline) {
+            const handler = async (e: Event) => {
+                const enableOutline = (e.target as HTMLInputElement).checked;
+                await this.settingsManager.updateSettings({ defaultShowHeadingNumberInOutline: enableOutline } as any);
+                await this.updatePanel();
+            };
+            headingInOutline.addEventListener('change', handler);
+            (headingInOutline as any)._documentStylerHandler = handler;
+        }
+
+        if (customFontCheckbox) {
+            const handler = async (e: Event) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                await this.settingsManager.updateSettings({ defaultCustomFontEnabled: enabled } as any);
+                this.toggleFontSettingsSection(enabled);
+                await this.updatePanel();
+            };
+            customFontCheckbox.addEventListener('change', handler);
+            (customFontCheckbox as any)._documentStylerHandler = handler;
         }
     }
 
