@@ -211,6 +211,14 @@ export class DockPanel implements IDockPanel {
                             <span class="fn__space"></span>
                             <input class="b3-switch fn__flex-center" id="doc-heading-in-attr" type="checkbox" ${docSettings.showHeadingNumberInBlockAttr ? 'checked' : ''}>
                         </label>
+                        <label class="fn__flex label-padding" style="margin-bottom: 8px;">
+                            <div class="fn__flex-1">
+                                在大纲中显示编号
+                                <div class="b3-label__text">同步在大纲项前显示与正文一致的编号</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-heading-in-outline" type="checkbox" ${docSettings.showHeadingNumberInOutline ? 'checked' : ''}>
+                        </label>
                     </div>
 
 
@@ -501,6 +509,27 @@ export class DockPanel implements IDockPanel {
             }
             headingInAttr.addEventListener('change', handler);
             (headingInAttr as any)._documentStylerHandler = handler;
+        }
+
+        // 大纲编号显示开关
+        const headingInOutline = this.panelElement.querySelector('#doc-heading-in-outline') as HTMLInputElement;
+        if (headingInOutline) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+                const enableOutline = (e.target as HTMLInputElement).checked;
+                await this.settingsManager.setDocumentSettings(docId, { showHeadingNumberInOutline: enableOutline });
+                // 重新应用标题编号以刷新CSS（包含大纲）
+                const latest = await this.settingsManager.getDocumentSettings(docId);
+                if (latest.headingNumberingEnabled) {
+                    this.debounceApplyHeadingNumbering();
+                }
+            };
+            if ((headingInOutline as any)._documentStylerHandler) {
+                headingInOutline.removeEventListener('change', (headingInOutline as any)._documentStylerHandler);
+            }
+            headingInOutline.addEventListener('change', handler);
+            (headingInOutline as any)._documentStylerHandler = handler;
         }
 
         // 图表编号前缀输入框
@@ -1029,6 +1058,10 @@ export class DockPanel implements IDockPanel {
             this.toggleNumberingFormatsSection(docSettings.headingNumberingEnabled);
             this.toggleFiguresSection(docSettings.crossReferenceEnabled);
             this.toggleFontSettingsSection(docSettings.customFontEnabled);
+
+            // 更新大纲开关显示状态
+            const outlineSwitch = this.panelElement.querySelector('#doc-heading-in-outline') as HTMLInputElement | null;
+            if (outlineSwitch) outlineSwitch.checked = !!docSettings.showHeadingNumberInOutline;
 
             // 更新图片堆叠设置 UI
             const imgStackEnabled = this.panelElement.querySelector('#doc-imgstack-enabled') as HTMLInputElement | null;

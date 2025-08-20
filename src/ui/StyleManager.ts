@@ -16,6 +16,8 @@ export class StyleManager implements IStyleManager {
     private currentFigureMap: Record<string, { number: string; type: 'image' | 'table' }> = {};
     // 是否优先使用块属性/内容可编辑区域作为编号渲染目标
     private preferBlockAttr: boolean = true;
+    // 是否在大纲中显示标题编号
+    private outlineNumberingEnabled: boolean = false;
 
     async init(): Promise<void> {
         this.loadStyles();
@@ -543,6 +545,15 @@ export class StyleManager implements IStyleManager {
     }
 
     /**
+     * 设置是否在大纲中显示编号
+     */
+    setOutlineNumberingEnabled(enabled: boolean): void {
+        this.outlineNumberingEnabled = enabled;
+        // 重新刷新样式以反映开关变化
+        this.updateNumberingStyles();
+    }
+
+    /**
      * 清除标题编号样式
      */
     clearHeadingNumbering(): void {
@@ -633,6 +644,13 @@ export class StyleManager implements IStyleManager {
                 margin-right: 4px;
                 color: var(--b3-theme-on-surface-light);
             }\n`;
+            if (this.outlineNumberingEnabled) {
+                css += `.sy__outline [data-node-id="${blockId}"] .b3-list-item__text::before {
+                content: "${number}";
+                margin-right: 4px;
+                color: var(--b3-theme-on-surface-light);
+            }\n`;
+            }
         }
         return css;
     }

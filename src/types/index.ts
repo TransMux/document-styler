@@ -349,6 +349,8 @@ export interface IDocumentStylerDocumentSettings {
     customFontEnabled: boolean;
     /** 是否将标题编号显示在块属性（右上角） */
     showHeadingNumberInBlockAttr?: boolean;
+    /** 是否在大纲中显示标题编号 */
+    showHeadingNumberInOutline?: boolean;
     /** 标题编号格式配置 */
     numberingFormats: string[];
     /** 标题编号样式配置 (6个级别) */

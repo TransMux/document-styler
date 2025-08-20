@@ -344,6 +344,7 @@ export class SettingsManager implements ISettingsManager {
             crossReferenceEnabled: false,
             customFontEnabled: false,
             showHeadingNumberInBlockAttr: true,
+            showHeadingNumberInOutline: false,
             numberingFormats: [...this.settings.numberingFormats],
             headingNumberStyles: [...this.settings.headingNumberStyles],
             figurePrefix: this.settings.figurePrefix,
@@ -490,6 +491,9 @@ export class SettingsManager implements ISettingsManager {
 
         if (typeof settings.showHeadingNumberInBlockAttr === 'boolean') {
             fixed.showHeadingNumberInBlockAttr = settings.showHeadingNumberInBlockAttr;
+        }
+        if (typeof settings.showHeadingNumberInOutline === 'boolean') {
+            (fixed as any).showHeadingNumberInOutline = settings.showHeadingNumberInOutline;
         }
 
         if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {

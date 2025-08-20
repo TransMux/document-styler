@@ -86,8 +86,11 @@ export class HeadingNumbering implements IHeadingNumbering {
                 false // 使用缓存，提升性能
             );
 
-            // 根据文档设置切换渲染目标
+            // 根据文档设置切换渲染目标与大纲同步
             this.styleManager.setPreferBlockAttr(!!docSettings.showHeadingNumberInBlockAttr);
+            if (typeof (this.styleManager as any).setOutlineNumberingEnabled === 'function') {
+                (this.styleManager as any).setOutlineNumberingEnabled(!!(docSettings as any).showHeadingNumberInOutline);
+            }
             // 应用CSS样式
             this.styleManager.applyHeadingNumbering(headingMap);
             console.log('HeadingNumbering: 标题编号更新完成');
@@ -128,8 +131,11 @@ export class HeadingNumbering implements IHeadingNumbering {
             );
             console.log('DocumentStyler: 标题编号映射获取成功', headingMap);
 
-            // 应用CSS样式
+            // 应用CSS样式（包含大纲同步）
             this.styleManager.setPreferBlockAttr(!!docSettings.showHeadingNumberInBlockAttr);
+            if (typeof (this.styleManager as any).setOutlineNumberingEnabled === 'function') {
+                (this.styleManager as any).setOutlineNumberingEnabled(!!(docSettings as any).showHeadingNumberInOutline);
+            }
             this.styleManager.applyHeadingNumbering(headingMap);
             console.log('DocumentStyler: CSS样式应用完成');
         } catch (error) {
