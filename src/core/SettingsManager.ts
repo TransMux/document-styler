@@ -349,6 +349,9 @@ export class SettingsManager implements ISettingsManager {
             figurePrefix: this.settings.figurePrefix,
             tablePrefix: this.settings.tablePrefix,
             fontSettings: this.getDefaultFontSettings(),
+            imageStackEnabled: false,
+            imageStackMode: 'compact',
+            imageStackCollapsedHeight: '48px',
         };
     }
 
@@ -516,6 +519,17 @@ export class SettingsManager implements ISettingsManager {
                 fontSize: typeof fontSettings.fontSize === 'string' ? fontSettings.fontSize : defaultFontSettings.fontSize,
                 lineHeight: typeof fontSettings.lineHeight === 'string' ? fontSettings.lineHeight : defaultFontSettings.lineHeight,
             };
+        }
+
+        // 新增：图片堆叠设置
+        if (typeof settings.imageStackEnabled === 'boolean') {
+            (fixed as any).imageStackEnabled = settings.imageStackEnabled;
+        }
+        if (settings.imageStackMode === 'hide' || settings.imageStackMode === 'compact') {
+            (fixed as any).imageStackMode = settings.imageStackMode;
+        }
+        if (typeof settings.imageStackCollapsedHeight === 'string') {
+            (fixed as any).imageStackCollapsedHeight = settings.imageStackCollapsedHeight;
         }
 
         return fixed;

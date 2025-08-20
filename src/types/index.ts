@@ -359,4 +359,10 @@ export interface IDocumentStylerDocumentSettings {
     tablePrefix: string;
     /** 字体设置 */
     fontSettings: IFontSettings;
+    /** 连续图片堆叠启用状态 */
+    imageStackEnabled?: boolean;
+    /** 连续图片堆叠显示模式：隐藏其他或收起高度 */
+    imageStackMode?: 'hide' | 'compact';
+    /** 收起模式的高度（例如 "48px" 或 "1lh"） */
+    imageStackCollapsedHeight?: string;
 }

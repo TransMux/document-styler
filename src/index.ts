@@ -10,6 +10,7 @@ import { HeadingNumbering } from "./core/HeadingNumbering";
 import { CrossReference } from "./core/CrossReference";
 import { FontStyleManager } from "./core/FontStyleManager";
 import { BetaFeatureManager } from "./core/BetaFeatureManager";
+import { ImageStackManager } from "./core/ImageStackManager";
 import { DockPanel } from "./ui/DockPanel";
 import { StyleManager } from "./ui/StyleManager";
 import { IPluginOptions, IDocumentStylerSettings, IDocumentInfo } from "./types";
@@ -33,6 +34,7 @@ export default class DocumentStylerPlugin extends Plugin {
     private betaFeatureManager: BetaFeatureManager;
     private styleManager: StyleManager;
     private dockPanel: DockPanel;
+    private imageStackManager: ImageStackManager;
 
     // 事件监听器管理
     private eventListeners: Map<string, Function> = new Map();
@@ -127,6 +129,7 @@ export default class DocumentStylerPlugin extends Plugin {
         this.documentManager = new DocumentManager(this.appRef);
         this.fontStyleManager = new FontStyleManager(this.settingsManager);
         this.styleManager = new StyleManager();
+        this.imageStackManager = new ImageStackManager(this.settingsManager, this.documentManager, this.styleManager);
 
         // 功能组件
         this.headingNumbering = new HeadingNumbering(
@@ -209,6 +212,7 @@ export default class DocumentStylerPlugin extends Plugin {
         await this.betaFeatureManager.init();
         await this.headingNumbering.init();
         await this.crossReference.init();
+        await this.imageStackManager.init();
         await this.dockPanel.init();
     }
 
@@ -335,6 +339,8 @@ export default class DocumentStylerPlugin extends Plugin {
 
             // 应用当前文档的设置
             await this.applyCurrentDocumentSettings();
+            // 应用图片堆叠
+            await this.imageStackManager.applyForCurrentDocument();
 
             // 延迟检查是否需要更新交叉引用（防止WebSocket消息处理的竞争条件）
             setTimeout(async () => {
@@ -376,6 +382,8 @@ export default class DocumentStylerPlugin extends Plugin {
 
             // 应用当前文档的设置
             await this.applyCurrentDocumentSettings();
+            // 应用图片堆叠
+            await this.imageStackManager.applyForCurrentDocument();
         } catch (error) {
             console.error('DocumentStyler: 文档加载处理失败:', error);
         }
@@ -426,6 +434,8 @@ export default class DocumentStylerPlugin extends Plugin {
                     // 使用组件的专门处理器进行更精细的分析
                     await this.headingNumbering.handleTransactionMessage(data);
                     await this.crossReference.handleTransactionMessage(data);
+                    // 变更后尝试重新应用图片堆叠（结构变化可能影响分组）
+                    await this.imageStackManager.applyForCurrentDocument();
                 } else {
                     console.log('DocumentStyler: 收到WebSocket transactions消息，但当前文档ID为空，跳过处理');
                 }
@@ -437,6 +447,7 @@ export default class DocumentStylerPlugin extends Plugin {
                     if (typeof this.headingNumbering?.handleSaveDocMessage === 'function') {
                         await this.headingNumbering.handleSaveDocMessage(data);
                     }
+                    await this.imageStackManager.applyForCurrentDocument();
                 }
             }
         } catch (error) {
@@ -472,6 +483,9 @@ export default class DocumentStylerPlugin extends Plugin {
 
             // 应用字体设置
             await this.fontStyleManager.applyFontStyles(this.currentDocId, docSettings.fontSettings);
+
+            // 图片堆叠设置
+            await this.imageStackManager.applyForCurrentDocument();
         } catch (error) {
             console.error('DocumentStyler: 应用文档设置失败:', error);
         }
@@ -1035,6 +1049,17 @@ export default class DocumentStylerPlugin extends Plugin {
      */
     public getBetaFeatureManager(): BetaFeatureManager | null {
         return this.betaFeatureManager || null;
+    }
+
+    /**
+     * 应用图片堆叠（供DockPanel调用）
+     */
+    public async applyImageStack(): Promise<void> {
+        try {
+            await this.imageStackManager.applyForCurrentDocument();
+        } catch (e) {
+            console.error('应用图片堆叠失败:', e);
+        }
     }
 
     // ==================== 新增命令的实现 ====================

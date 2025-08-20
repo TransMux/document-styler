@@ -179,6 +179,28 @@ export class DockPanel implements IDockPanel {
                             <span class="fn__space"></span>
                             <input class="b3-switch fn__flex-center" id="doc-custom-font-enabled" type="checkbox" checked="">
                         </label>
+
+                        <label class="fn__flex label-padding">
+                            <div class="fn__flex-1">
+                                连续图片堆叠
+                                <div class="b3-label__text">将连续图片块堆叠显示，滚轮切换</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-imgstack-enabled" type="checkbox" ${docSettings.imageStackEnabled ? 'checked' : ''}>
+                        </label>
+
+                        <div class="fn__flex label-padding" id="doc-imgstack-options" style="${docSettings.imageStackEnabled ? '' : 'display:none;'}">
+                            <div class="fn__flex-1">
+                                显示模式
+                                <div class="b3-label__text">隐藏其它图片，或将其收起为较低高度</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <select class="b3-select fn__flex-center fn__size200" id="doc-imgstack-mode">
+                                <option value="hide" ${docSettings.imageStackMode === 'hide' ? 'selected' : ''}>隐藏其它</option>
+                                <option value="compact" ${docSettings.imageStackMode !== 'hide' ? 'selected' : ''}>收起提示</option>
+                            </select>
+                            <input class="b3-text-field fn__flex-center fn__size120" id="doc-imgstack-height" value="${docSettings.imageStackCollapsedHeight || '48px'}" placeholder="48px">
+                        </div>
                     </div>
 
                     <!-- 标题编号样式设置 -->
@@ -524,6 +546,9 @@ export class DockPanel implements IDockPanel {
         if (currentDocId) {
             this.bindDocumentStatusEvents(currentDocId);
         }
+
+        // 绑定图片堆叠设置事件
+        this.bindImageStackEvents();
     }
 
     /**
@@ -733,6 +758,74 @@ export class DockPanel implements IDockPanel {
 
         // 清除文档状态事件
         this.clearDocumentStatusEvents();
+
+        // 清除图片堆叠事件
+        this.clearImageStackEvents();
+    }
+
+    private bindImageStackEvents(): void {
+        if (!this.panelElement) return;
+        const enabledEl = this.panelElement.querySelector('#doc-imgstack-enabled') as HTMLInputElement | null;
+        const modeEl = this.panelElement.querySelector('#doc-imgstack-mode') as HTMLSelectElement | null;
+        const heightEl = this.panelElement.querySelector('#doc-imgstack-height') as HTMLInputElement | null;
+        const optionsRow = this.panelElement.querySelector('#doc-imgstack-options') as HTMLElement | null;
+
+        if (enabledEl) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+                const enabled = (e.target as HTMLInputElement).checked;
+                await this.settingsManager.setDocumentSettings(docId, { imageStackEnabled: enabled });
+                if (optionsRow) optionsRow.style.display = enabled ? '' : 'none';
+                // 触发立即应用
+                if (this.pluginInstance && typeof this.pluginInstance.applyImageStack === 'function') {
+                    await this.pluginInstance.applyImageStack();
+                }
+            };
+            enabledEl.addEventListener('change', handler);
+            (enabledEl as any)._documentStylerHandler = handler;
+        }
+
+        if (modeEl) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+                const mode = (e.target as HTMLSelectElement).value as any;
+                await this.settingsManager.setDocumentSettings(docId, { imageStackMode: mode });
+                if (this.pluginInstance && typeof this.pluginInstance.applyImageStack === 'function') {
+                    await this.pluginInstance.applyImageStack();
+                }
+            };
+            modeEl.addEventListener('change', handler);
+            (modeEl as any)._documentStylerHandler = handler;
+        }
+
+        if (heightEl) {
+            const handler = async (e: Event) => {
+                const docId = this.documentManager.getCurrentDocId();
+                if (!docId) return;
+                const height = (e.target as HTMLInputElement).value || '48px';
+                await this.settingsManager.setDocumentSettings(docId, { imageStackCollapsedHeight: height });
+                if (this.pluginInstance && typeof this.pluginInstance.applyImageStack === 'function') {
+                    await this.pluginInstance.applyImageStack();
+                }
+            };
+            heightEl.addEventListener('change', handler);
+            (heightEl as any)._documentStylerHandler = handler;
+        }
+    }
+
+    private clearImageStackEvents(): void {
+        if (!this.panelElement) return;
+        const ids = ['#doc-imgstack-enabled', '#doc-imgstack-mode', '#doc-imgstack-height'];
+        ids.forEach(sel => {
+            const el = this.panelElement!.querySelector(sel) as any;
+            if (el && el._documentStylerHandler) {
+                const type = sel === '#doc-imgstack-enabled' ? 'change' : 'change';
+                el.removeEventListener(type, el._documentStylerHandler);
+                delete el._documentStylerHandler;
+            }
+        });
     }
 
     /**
@@ -941,6 +1034,16 @@ export class DockPanel implements IDockPanel {
             this.toggleNumberingFormatsSection(docSettings.headingNumberingEnabled);
             this.toggleFiguresSection(docSettings.crossReferenceEnabled);
             this.toggleFontSettingsSection(docSettings.customFontEnabled);
+
+            // 更新图片堆叠设置 UI
+            const imgStackEnabled = this.panelElement.querySelector('#doc-imgstack-enabled') as HTMLInputElement | null;
+            if (imgStackEnabled) imgStackEnabled.checked = !!docSettings.imageStackEnabled;
+            const imgStackMode = this.panelElement.querySelector('#doc-imgstack-mode') as HTMLSelectElement | null;
+            if (imgStackMode) imgStackMode.value = (docSettings.imageStackMode === 'hide' ? 'hide' : 'compact');
+            const imgStackHeight = this.panelElement.querySelector('#doc-imgstack-height') as HTMLInputElement | null;
+            if (imgStackHeight) imgStackHeight.value = docSettings.imageStackCollapsedHeight || '48px';
+            const imgStackRow = this.panelElement.querySelector('#doc-imgstack-options') as HTMLElement | null;
+            if (imgStackRow) imgStackRow.style.display = docSettings.imageStackEnabled ? '' : 'none';
         } catch (error) {
             console.error('更新设置UI失败:', error);
         }

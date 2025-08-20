@@ -9,6 +9,7 @@ export class StyleManager implements IStyleManager {
     private readonly MAIN_STYLE_ID = 'document-styler-plugin-styles';
     private readonly HEADING_STYLE_ID = 'document-styler-heading-numbering';
     private readonly IMG_LH_STYLE_ID = 'document-styler-img-lineheight';
+    private readonly IMG_STACK_STYLE_ID = 'document-styler-img-stack';
 
     // 当前应用的编号映射
     private currentHeadingMap: IHeadingNumberMap = {};
@@ -37,6 +38,9 @@ export class StyleManager implements IStyleManager {
 
         const imgLHStyle = document.getElementById(this.IMG_LH_STYLE_ID);
         if (imgLHStyle) imgLHStyle.remove();
+
+        const imgStackStyle = document.getElementById(this.IMG_STACK_STYLE_ID);
+        if (imgStackStyle) imgStackStyle.remove();
     }
 
     updateStyles(): void {
@@ -342,6 +346,8 @@ export class StyleManager implements IStyleManager {
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
+
+            /* 连续图片堆叠基础样式（保持为空或最小影响，具体显示通过 data-node-id 精确控制） */
         `;
 
         let styleElement = document.getElementById(this.MAIN_STYLE_ID) as HTMLStyleElement;
@@ -351,6 +357,45 @@ export class StyleManager implements IStyleManager {
             document.head.appendChild(styleElement);
         }
         styleElement.textContent = css;
+    }
+
+    /**
+     * 为某个组设置可见性：基于 data-node-id 生成精确的 CSS
+     */
+    setImageStackVisibility(
+        docId: string,
+        groupKey: string,
+        mode: 'hide' | 'compact',
+        collapsedHeight: string,
+        activeId: string,
+        groupIds: string[],
+    ): void {
+        const styleId = `${this.IMG_STACK_STYLE_ID}-${docId}-${groupKey}`;
+        let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            document.head.appendChild(styleEl);
+        }
+
+        const others = groupIds.filter(id => id !== activeId);
+        let css = '';
+        if (mode === 'hide') {
+            css = others.map(id => `
+                .protyle[data-doc-id="${docId}"] [data-node-id="${id}"] { display: none !important; }
+            `).join('\n');
+        } else {
+            css = others.map(id => `
+                .protyle[data-doc-id="${docId}"] [data-node-id="${id}"] [contenteditable] { max-height: ${collapsedHeight}; overflow: hidden; }
+            `).join('\n');
+        }
+        styleEl.textContent = css;
+    }
+
+    clearImageStackVisibility(docId: string, groupKey: string): void {
+        const styleId = `${this.IMG_STACK_STYLE_ID}-${docId}-${groupKey}`;
+        const styleEl = document.getElementById(styleId);
+        if (styleEl) styleEl.remove();
     }
 
     /**
