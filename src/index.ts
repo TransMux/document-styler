@@ -1,5 +1,5 @@
 import { Plugin, App, showMessage } from "siyuan";
-import { insertBlock, updateBlock } from "./api";
+import { insertBlock, pushMsg, updateBlock } from "./api";
 import { batchUpdateBlockContent } from "./utils/apiUtils";
 import { Custom, setupWebSocketHandler, hasWebSocket } from "./utils/siyuan-api";
 
@@ -35,6 +35,7 @@ export default class DocumentStylerPlugin extends Plugin {
     private styleManager: StyleManager;
     private dockPanel: DockPanel;
     private imageStackManager: ImageStackManager;
+    private savedSelectionRange: Range | null = null;
 
     // 事件监听器管理
     private eventListeners: Map<string, Function> = new Map();
@@ -72,7 +73,7 @@ export default class DocumentStylerPlugin extends Plugin {
         this.protyleSlash.push({
             filter: ["cross-reference", "cross reference", "交叉引用", "jiaochayinyong", "jcyy", "图表引用", "tubiaoyinyong", "tbyy"],
             html: `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconRef"></use></svg><span class="b3-list-item__text">交叉引用</span></div>`,
-            id: "crossReference",
+            id: "cr",
             callback: (protyle: any) => {
                 // 检查是否为内测用户
                 if (!this.betaFeatureManager.isBetaVerified()) {
@@ -797,9 +798,9 @@ export default class DocumentStylerPlugin extends Plugin {
     private async handleCrossReferenceSlash(protyle: any, nodeElement: HTMLElement | null): Promise<void> {
         try {
             // 获取当前文档ID
-            const docId = protyle?.block?.rootID;
+            const docId = this.documentManager.getCurrentDocId();
             if (!docId) {
-                console.warn('无法获取当前文档ID');
+                pushMsg('无法获取当前文档ID', 2000);
                 return;
             }
 
@@ -819,12 +820,17 @@ export default class DocumentStylerPlugin extends Plugin {
      * @param nodeElement 节点元素
      * @param figures 图表数据
      */
-    private showCrossReferenceMenu(protyle: any, nodeElement: HTMLElement, figures: any[]): void {
-        // 获取光标位置
-        const range = protyle.toolbar.range;
-        if (!range) return;
+    private showCrossReferenceMenu(protyle: any, nodeElement: HTMLElement | null, figures: any[]): void {
+        // 获取光标位置（参考思源源码，使用选择位置，而不是强依赖 toolbar.range）
+        const selection = window.getSelection();
+        const safeRange: Range | null = (protyle?.toolbar?.range as Range | undefined) ||
+            (selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null) ||
+            null;
 
-        const rangePosition = this.getSelectionPosition(nodeElement, range);
+        // 保存当前选择范围，避免菜单聚焦导致丢失
+        this.savedSelectionRange = safeRange ? safeRange.cloneRange() : null;
+
+        const rangePosition = this.getSelectionPosition(nodeElement, safeRange);
         const menuPosition = {
             x: rangePosition.left,
             y: rangePosition.top + 26
@@ -843,12 +849,32 @@ export default class DocumentStylerPlugin extends Plugin {
      * @param range 选择范围
      * @returns 位置信息
      */
-    private getSelectionPosition(_nodeElement: HTMLElement, range: Range): { left: number; top: number } {
-        const rect = range.getBoundingClientRect();
-        return {
-            left: rect.left,
-            top: rect.top
-        };
+    private getSelectionPosition(nodeElement: HTMLElement | null, range: Range | null): { left: number; top: number } {
+        // 优先使用 Range 的位置信息
+        if (range) {
+            const rect = range.getBoundingClientRect();
+            if (rect && (rect.width !== 0 || rect.height !== 0)) {
+                return { left: rect.left, top: rect.top };
+            }
+        }
+
+        // 其次使用传入节点的位置信息
+        if (nodeElement) {
+            const rect = nodeElement.getBoundingClientRect();
+            return { left: rect.left, top: rect.top };
+        }
+
+        // 再次尝试从当前编辑器中找到可编辑元素
+        try {
+            const editable = (document.querySelector('.protyle-wysiwyg [contenteditable="true"]') as HTMLElement | null);
+            if (editable) {
+                const rect = editable.getBoundingClientRect();
+                return { left: rect.left, top: rect.top };
+            }
+        } catch {}
+
+        // 最后回退到视口左上角的小偏移，避免坐标为(0,0)遮挡
+        return { left: 16, top: 16 };
     }
 
     /**
@@ -970,41 +996,54 @@ export default class DocumentStylerPlugin extends Plugin {
      * @param protyle 编辑器实例
      * @param figure 图表信息
      */
-    private insertCrossReference(protyle: any, figure: any): void {
+    private async insertCrossReference(protyle: any, figure: any): Promise<void> {
         try {
-            // 使用正确的交叉引用格式
-            const crossRefHTML = `<span data-type="block-ref" data-subtype="s" data-id="${figure.id}">*</span>`;
-
-            // 获取当前选择范围
-            const range = protyle.toolbar.range;
-            if (range) {
-                // 删除选择内容
-                range.deleteContents();
-
-                // 创建HTML元素并插入
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = crossRefHTML;
-                const crossRefElement = tempDiv.firstChild as HTMLElement;
-
-                range.insertNode(crossRefElement);
-                range.setStartAfter(crossRefElement);
-                range.collapse(true);
-
-                // 更新选择
-                const selection = window.getSelection();
-                if (selection) {
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                }
-
-                // 触发文档更新
-                this.triggerDocumentUpdate(protyle);
-
-                // 重新应用交叉引用样式以包含新插入的引用
-                this.updateCrossReferenceStyles(protyle);
+            // 对齐思源源码：使用 toolbar.setInlineMark 插入并触发事务
+            // 优先恢复菜单弹出前保存的选择范围
+            const sel = window.getSelection();
+            if (this.savedSelectionRange && sel) {
+                sel.removeAllRanges();
+                sel.addRange(this.savedSelectionRange);
+            }
+            // 如果存在 toolbar，则同步当前选择到 toolbar.range
+            if (protyle?.toolbar && sel && sel.rangeCount > 0) {
+                protyle.toolbar.range = sel.getRangeAt(0);
             }
 
+            const id: string = figure.id;
+            // const displayText: string = `${figure.type === 'image' ? '图' : '表'} ${figure.number}`;
+            const displayText: string = "*";
+            const ZWSP = '\u200b';
+
+            if (protyle?.toolbar && typeof protyle.toolbar.setInlineMark === 'function') {
+                protyle.toolbar.setInlineMark(protyle, 'block-ref', 'range', {
+                    type: 'id',
+                    color: `${id}${ZWSP}s${ZWSP}${displayText}`
+                });
+            } else {
+                // 回退：直接插入简化的 block-ref，随后持久化
+                const sel2 = window.getSelection();
+                const range: Range | undefined = sel2 && sel2.rangeCount > 0 ? sel2.getRangeAt(0) : undefined;
+                const crossRefHTML = `<span data-type="block-ref" data-subtype="s" data-id="${id}">${displayText}</span>`;
+                if (range) {
+                    range.deleteContents();
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = crossRefHTML;
+                    const crossRefElement = tempDiv.firstChild as HTMLElement;
+                    range.insertNode(crossRefElement);
+                    range.setStartAfter(crossRefElement);
+                    range.collapse(true);
+                    const sel3 = window.getSelection();
+                    if (sel3) { sel3.removeAllRanges(); sel3.addRange(range); }
+                    this.triggerDocumentUpdate(protyle);
+                }
+            }
+
+            // 更新样式
+            await this.updateCrossReferenceStyles(protyle);
             console.log(`插入交叉引用: ${figure.type} ${figure.number}`);
+            // 清空已保存的选择范围
+            this.savedSelectionRange = null;
         } catch (error) {
             console.error('插入交叉引用失败:', error);
         }
