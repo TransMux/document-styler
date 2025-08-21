@@ -438,14 +438,14 @@ export default class DocumentStylerPlugin extends Plugin {
             // 只处理transactions事件，用于实时更新
             if (data.cmd === 'transactions') {
                 if (this.currentDocId) {
-                    console.log(`DocumentStyler: 收到WebSocket transactions消息，当前文档ID: ${this.currentDocId}`);
+                    // 仅在当前文档实际受到影响时才更新，避免其他文档变化导致图片堆叠刷新
+                    const affected = this.documentManager.isCurrentDocumentAffected(data);
+                    if (!affected) return;
                     // 使用组件的专门处理器进行更精细的分析
                     await this.headingNumbering.handleTransactionMessage(data);
                     await this.crossReference.handleTransactionMessage(data);
                     // 变更后尝试重新应用图片堆叠（结构变化可能影响分组）
                     await this.imageStackManager.applyForCurrentDocument();
-                } else {
-                    console.log('DocumentStyler: 收到WebSocket transactions消息，但当前文档ID为空，跳过处理');
                 }
             } else if (data.cmd === 'savedoc') {
                 // 处理内核推送的 savedoc 消息：用于拖拽排序、块类型转换等保存导致的结构变化

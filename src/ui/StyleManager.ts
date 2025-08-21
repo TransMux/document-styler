@@ -325,6 +325,7 @@ export class StyleManager implements IStyleManager {
             }
 
             /* 加载状态 */
+            /* 加载状态 */
             .document-styler-loading {
                 display: flex;
                 align-items: center;
