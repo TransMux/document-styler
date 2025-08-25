@@ -119,7 +119,7 @@ ${styles.join('\n\n')}
         scope: string
     ): string {
         return `
-${scope} [data-node-id="${captionId}"] [contenteditable="true"]::before {
+${scope} [data-node-id="${captionId}"] [contenteditable]::before {
     content: "${prefix} ${number}: ";
     color: var(--b3-theme-primary);
     font-weight: 500;
@@ -182,13 +182,13 @@ ${scope} .${className}-highlight-fade {
         return `
 /* 响应式样式 */
 @media (max-width: 768px) {
-    ${scope} [data-node-id] [contenteditable="true"]::before {
+    ${scope} [data-node-id] [contenteditable]::before {
         font-size: 0.9em;
     }
 }
 
 @media (max-width: 480px) {
-    ${scope} [data-node-id] [contenteditable="true"]::before {
+    ${scope} [data-node-id] [contenteditable]::before {
         font-size: 0.8em;
         margin-right: 0.2em;
     }
@@ -213,7 +213,7 @@ ${scope} .${className}-highlight-fade {
         background-color: transparent !important;
     }
     
-    ${scope} [data-node-id] [contenteditable="true"]::before {
+    ${scope} [data-node-id] [contenteditable]::before {
         color: #000 !important;
     }
 }
@@ -255,7 +255,7 @@ ${scope} .${className}-highlight-fade {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-[data-theme-mode="dark"] ${scope} [data-node-id] [contenteditable="true"]::before {
+[data-theme-mode="dark"] ${scope} [data-node-id] [contenteditable]::before {
     color: var(--b3-theme-primary-lighter);
 }
         `.trim();
@@ -277,7 +277,7 @@ ${scope} .${className}-highlight-fade {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
-[data-theme-mode="light"] ${scope} [data-node-id] [contenteditable="true"]::before {
+[data-theme-mode="light"] ${scope} [data-node-id] [contenteditable]::before {
     color: var(--b3-theme-primary);
 }
         `.trim();

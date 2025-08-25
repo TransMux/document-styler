@@ -164,9 +164,9 @@ export class FontStyleManager implements IModule {
         const cssRule = `
 /* 文档 ${docId} 的字体样式 */
 .protyle[data-doc-id="${docId}"] .protyle-wysiwyg,
-.protyle[data-doc-id="${docId}"] .protyle-wysiwyg [contenteditable="true"],
+.protyle[data-doc-id="${docId}"] .protyle-wysiwyg [contenteditable],
 .protyle-wysiwyg[data-doc-id="${docId}"],
-.protyle-wysiwyg[data-doc-id="${docId}"] [contenteditable="true"],
+.protyle-wysiwyg[data-doc-id="${docId}"] [contenteditable],
 .protyle-wysiwyg[data-doc-id="${docId}"] .protyle-wysiwyg__embed,
 .protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeParagraph"],
 .protyle-wysiwyg[data-doc-id="${docId}"] [data-type="NodeHeading"],
