@@ -1,6 +1,6 @@
 {
   "name": "document-styler",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "type": "module",
   "description": "Document Styler for Siyuan",
   "repository": "https://github.com/TransMux/document-styler",

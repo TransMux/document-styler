@@ -18,6 +18,10 @@ export class StyleManager implements IStyleManager {
     private preferBlockAttr: boolean = true;
     // 是否在大纲中显示标题编号
     private outlineNumberingEnabled: boolean = false;
+    // 是否在正文(Protyle)中显示标题编号
+    private protyleNumberingEnabled: boolean = true;
+    // 是否让编号颜色继承（不强制设置颜色）
+    private headingNumberColorInherit: boolean = true;
 
     async init(): Promise<void> {
         this.loadStyles();
@@ -555,6 +559,22 @@ export class StyleManager implements IStyleManager {
     }
 
     /**
+     * 设置是否在正文(Protyle)中显示编号
+     */
+    setProtyleNumberingEnabled(enabled: boolean): void {
+        this.protyleNumberingEnabled = enabled;
+        this.updateNumberingStyles();
+    }
+
+    /**
+     * 设置编号颜色是否继承
+     */
+    setHeadingNumberColorInherit(enabled: boolean): void {
+        this.headingNumberColorInherit = enabled;
+        this.updateNumberingStyles();
+    }
+
+    /**
      * 清除标题编号样式
      */
     clearHeadingNumbering(): void {
@@ -640,16 +660,18 @@ export class StyleManager implements IStyleManager {
             const selector = this.preferBlockAttr
                 ? `.protyle-wysiwyg [data-node-id="${blockId}"] [contenteditable]::before`
                 : `.protyle-wysiwyg [data-node-id="${blockId}"] [spellcheck]::before`;
-            css += `${selector} {
-                content: "${number}";
-                margin-right: 4px;
-                color: var(--b3-theme-on-surface-light);
-            }\n`;
+            if (this.protyleNumberingEnabled) {
+                css += `${selector} {
+                    content: "${number}";
+                    margin-right: 4px;
+                    ${this.headingNumberColorInherit ? '' : 'color: var(--b3-theme-on-surface-light);'}
+                }\n`;
+            }
             if (this.outlineNumberingEnabled) {
                 css += `.sy__outline [data-node-id="${blockId}"] .b3-list-item__text::before {
                 content: "${number}";
                 margin-right: 4px;
-                color: var(--b3-theme-on-surface-light);
+                ${this.headingNumberColorInherit ? '' : 'color: var(--b3-theme-on-surface-light);'}
             }\n`;
             }
         }

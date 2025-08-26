@@ -225,6 +225,22 @@ export class DockPanel implements IDockPanel {
                             <span class="fn__space"></span>
                             <input class="b3-switch fn__flex-center" id="doc-heading-in-outline" type="checkbox" ${docSettings.showHeadingNumberInOutline ? 'checked' : ''}>
                         </label>
+                        <label class="fn__flex label-padding" style="margin-bottom: 8px;">
+                            <div class="fn__flex-1">
+                                序号颜色继承标题颜色
+                                <div class="b3-label__text">开启后不强制设置序号颜色，使用当前标题颜色</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-heading-color-inherit" type="checkbox" ${docSettings.headingNumberColorInherit !== false ? 'checked' : ''}>
+                        </label>
+                        <label class="fn__flex label-padding" style="margin-bottom: 8px;">
+                            <div class="fn__flex-1">
+                                在正文中显示编号
+                                <div class="b3-label__text">关闭后，仅大纲显示或完全隐藏</div>
+                            </div>
+                            <span class="fn__space"></span>
+                            <input class="b3-switch fn__flex-center" id="doc-heading-in-protyle" type="checkbox" ${docSettings.showHeadingNumberInProtyle !== false ? 'checked' : ''}>
+                        </label>
                         <div id="override-tip" class="document-styler-info" style="display:none; margin: 8px 24px 0;">当前文档设置已覆盖全局默认设置</div>
                     </div>
 
@@ -549,6 +565,37 @@ export class DockPanel implements IDockPanel {
             (headingInOutline as any)._documentStylerHandler = handler;
         }
 
+        // 序号颜色继承开关（文档/全局）
+        const headingColorInherit = this.panelElement.querySelector('#doc-heading-color-inherit') as HTMLInputElement;
+        if (headingColorInherit) {
+            const old = (headingColorInherit as any)._documentStylerHandler;
+            if (old) {
+                headingColorInherit.removeEventListener('change', old);
+            }
+            const handler = async (e: Event) => {
+                const enabled = (e.target as HTMLInputElement).checked;
+                const docId = this.documentManager.getCurrentDocId();
+                if (docId) {
+                    await this.settingsManager.setDocumentSettings(docId, { headingNumberColorInherit: enabled });
+                    const latest = await this.settingsManager.getDocumentSettings(docId);
+                    if (latest.headingNumberingEnabled) {
+                        this.debounceApplyHeadingNumbering();
+                    }
+                } else {
+                    await this.settingsManager.updateSettings({ defaultHeadingNumberColorInherit: enabled } as any);
+                    const currentDocId = this.documentManager.getCurrentDocId();
+                    if (currentDocId) {
+                        const docSettings = await this.settingsManager.getDocumentSettings(currentDocId);
+                        if (docSettings.headingNumberingEnabled) {
+                            this.debounceApplyHeadingNumbering();
+                        }
+                    }
+                }
+            };
+            headingColorInherit.addEventListener('change', handler);
+            (headingColorInherit as any)._documentStylerHandler = handler;
+        }
+
         // 图表编号前缀输入框
         const figurePrefixInput = this.panelElement.querySelector('#figure-prefix-input') as HTMLInputElement;
         if (figurePrefixInput) {
@@ -589,6 +636,46 @@ export class DockPanel implements IDockPanel {
             this.bindDocumentStatusEvents(currentDocId);
         } else {
             this.bindGlobalStatusEvents();
+        }
+
+        // 正文(Protyle)编号显示开关（文档级/全局）
+        const headingInProtyle = this.panelElement.querySelector('#doc-heading-in-protyle') as HTMLInputElement;
+        if (headingInProtyle) {
+            // 先移除旧的事件再绑定，避免重复
+            const old = (headingInProtyle as any)._documentStylerHandler;
+            if (old) {
+                headingInProtyle.removeEventListener('change', old);
+                headingInProtyle.removeEventListener('input', old);
+            }
+
+            const handler = async (e: Event) => {
+                const enableProtyle = (e.target as HTMLInputElement).checked;
+                const docId = this.documentManager.getCurrentDocId();
+                try {
+                    if (docId) {
+                        await this.settingsManager.setDocumentSettings(docId, { showHeadingNumberInProtyle: enableProtyle });
+                        const latest = await this.settingsManager.getDocumentSettings(docId);
+                        if (latest.headingNumberingEnabled) {
+                            this.debounceApplyHeadingNumbering();
+                        }
+                    } else {
+                        await this.settingsManager.updateSettings({ defaultShowHeadingNumberInProtyle: enableProtyle } as any);
+                        const currentDocId = this.documentManager.getCurrentDocId();
+                        if (currentDocId) {
+                            const docSettings = await this.settingsManager.getDocumentSettings(currentDocId);
+                            if (docSettings.headingNumberingEnabled) {
+                                this.debounceApplyHeadingNumbering();
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('DocumentStyler: 切换正文编号失败', err);
+                }
+            };
+
+            headingInProtyle.addEventListener('change', handler);
+            headingInProtyle.addEventListener('input', handler);
+            (headingInProtyle as any)._documentStylerHandler = handler;
         }
     }
 

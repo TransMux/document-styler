@@ -58,6 +58,10 @@ export interface IDocumentStylerSettings {
     defaultShowHeadingNumberInBlockAttr?: boolean;
     /** 文档默认：在大纲中显示标题编号 */
     defaultShowHeadingNumberInOutline?: boolean;
+    /** 文档默认：在编辑器中显示标题编号 */
+    defaultShowHeadingNumberInProtyle?: boolean;
+    /** 文档默认：标题编号颜色继承（不强制设置颜色） */
+    defaultHeadingNumberColorInherit?: boolean;
     /** 文档默认：连续图片堆叠开关 */
     defaultImageStackEnabled?: boolean;
     /** 文档默认：连续图片堆叠模式 */
@@ -315,6 +319,10 @@ export interface IStyleManager extends IModule {
     removeStyles(): void;
     /** 更新样式 */
     updateStyles(): void;
+    /** 设置是否在正文(Protyle)中显示标题编号 */
+    setProtyleNumberingEnabled(enabled: boolean): void;
+    /** 设置标题编号颜色是否继承（不强制设置颜色） */
+    setHeadingNumberColorInherit(enabled: boolean): void;
 }
 
 // 移除不再需要的EventHandler接口
@@ -365,6 +373,10 @@ export interface IDocumentStylerDocumentSettings {
     showHeadingNumberInBlockAttr?: boolean;
     /** 是否在大纲中显示标题编号 */
     showHeadingNumberInOutline?: boolean;
+    /** 是否在编辑器中显示标题编号 */
+    showHeadingNumberInProtyle?: boolean;
+    /** 编号颜色是否继承标题颜色（不强制设置颜色） */
+    headingNumberColorInherit?: boolean;
     /** 标题编号格式配置 */
     numberingFormats: string[];
     /** 标题编号样式配置 (6个级别) */

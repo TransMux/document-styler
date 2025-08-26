@@ -41,6 +41,8 @@ const DEFAULT_SETTINGS: IDocumentStylerSettings = {
     },
     defaultShowHeadingNumberInBlockAttr: true,
     defaultShowHeadingNumberInOutline: false,
+    defaultShowHeadingNumberInProtyle: true,
+    defaultHeadingNumberColorInherit: true,
     defaultImageStackEnabled: false,
     defaultImageStackMode: 'compact',
     defaultImageStackCollapsedHeight: '48px',
@@ -359,6 +361,8 @@ export class SettingsManager implements ISettingsManager {
             customFontEnabled: (this.settings as any).defaultCustomFontEnabled ?? false,
             showHeadingNumberInBlockAttr: (this.settings as any).defaultShowHeadingNumberInBlockAttr ?? true,
             showHeadingNumberInOutline: (this.settings as any).defaultShowHeadingNumberInOutline ?? false,
+            showHeadingNumberInProtyle: (this.settings as any).defaultShowHeadingNumberInProtyle ?? true,
+            headingNumberColorInherit: (this.settings as any).defaultHeadingNumberColorInherit ?? true,
             numberingFormats: [...this.settings.numberingFormats],
             headingNumberStyles: [...this.settings.headingNumberStyles],
             figurePrefix: this.settings.figurePrefix,
@@ -508,6 +512,12 @@ export class SettingsManager implements ISettingsManager {
         }
         if (typeof settings.showHeadingNumberInOutline === 'boolean') {
             (fixed as any).showHeadingNumberInOutline = settings.showHeadingNumberInOutline;
+        }
+        if (typeof settings.showHeadingNumberInProtyle === 'boolean') {
+            (fixed as any).showHeadingNumberInProtyle = settings.showHeadingNumberInProtyle;
+        }
+        if (typeof settings.headingNumberColorInherit === 'boolean') {
+            (fixed as any).headingNumberColorInherit = settings.headingNumberColorInherit;
         }
 
         if (Array.isArray(settings.numberingFormats) && settings.numberingFormats.length === 6) {

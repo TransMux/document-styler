@@ -91,6 +91,14 @@ export class HeadingNumbering implements IHeadingNumbering {
             if (typeof (this.styleManager as any).setOutlineNumberingEnabled === 'function') {
                 (this.styleManager as any).setOutlineNumberingEnabled(!!(docSettings as any).showHeadingNumberInOutline);
             }
+            if (typeof (this.styleManager as any).setProtyleNumberingEnabled === 'function') {
+                const protyleEnabled = (docSettings as any).showHeadingNumberInProtyle;
+                (this.styleManager as any).setProtyleNumberingEnabled(protyleEnabled !== false);
+            }
+            if (typeof (this.styleManager as any).setHeadingNumberColorInherit === 'function') {
+                const inherit = (docSettings as any).headingNumberColorInherit;
+                (this.styleManager as any).setHeadingNumberColorInherit(inherit !== false);
+            }
             // 应用CSS样式
             this.styleManager.applyHeadingNumbering(headingMap);
             console.log('HeadingNumbering: 标题编号更新完成');
@@ -135,6 +143,14 @@ export class HeadingNumbering implements IHeadingNumbering {
             this.styleManager.setPreferBlockAttr(!!docSettings.showHeadingNumberInBlockAttr);
             if (typeof (this.styleManager as any).setOutlineNumberingEnabled === 'function') {
                 (this.styleManager as any).setOutlineNumberingEnabled(!!(docSettings as any).showHeadingNumberInOutline);
+            }
+            if (typeof (this.styleManager as any).setProtyleNumberingEnabled === 'function') {
+                const protyleEnabled = (docSettings as any).showHeadingNumberInProtyle;
+                (this.styleManager as any).setProtyleNumberingEnabled(protyleEnabled !== false);
+            }
+            if (typeof (this.styleManager as any).setHeadingNumberColorInherit === 'function') {
+                const inherit = (docSettings as any).headingNumberColorInherit;
+                (this.styleManager as any).setHeadingNumberColorInherit(inherit !== false);
             }
             this.styleManager.applyHeadingNumbering(headingMap);
             console.log('DocumentStyler: CSS样式应用完成');
