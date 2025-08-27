@@ -294,7 +294,7 @@ export class DocumentManager implements IDocumentManager {
      */
     isCurrentDocumentAffected(msg: any): boolean {
         if (!this.currentDocId || !this.currentProtyle || !msg.data || !Array.isArray(msg.data)) {
-            console.log(`DocumentManager: 消息影响检查失败 - 当前文档ID: ${this.currentDocId}, protyle存在: ${!!this.currentProtyle}, 消息数据有效: ${!!(msg.data && Array.isArray(msg.data))}`);
+
             return false;
         }
 
@@ -309,7 +309,7 @@ export class DocumentManager implements IDocumentManager {
                 if (operation.id) {
                     const blockExists = this.isBlockInCurrentProtyle(operation.id);
                     if (blockExists) {
-                        console.log(`DocumentManager: 检测到影响当前文档的操作 - 块ID: ${operation.id}, 操作: ${operation.action}`);
+
                     }
                     return blockExists;
                 }
@@ -317,7 +317,7 @@ export class DocumentManager implements IDocumentManager {
             });
         });
 
-        console.log(`DocumentManager: 消息是否影响当前文档: ${isAffected}`);
+
         return isAffected;
     }
 

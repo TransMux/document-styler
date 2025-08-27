@@ -26,7 +26,7 @@ export class FigureProcessor {
             // 3. 标准化内容
             const standardizedFigures = sortedFigures.map(figure => this.standardizeFigureContent(figure));
 
-            console.log(`FigureProcessor: 处理了 ${figures.length} 个图表`);
+
             return standardizedFigures;
 
         } catch (error) {

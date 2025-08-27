@@ -47,7 +47,7 @@ export class EventDispatcher {
      * 初始化事件分发器
      */
     async init(): Promise<void> {
-        console.log('EventDispatcher: 初始化完成');
+
     }
 
     /**
@@ -86,7 +86,7 @@ export class EventDispatcher {
         // 按优先级排序
         handlers.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
-        console.log(`EventDispatcher: 注册事件监听器 ${eventType}:${handlerId}`);
+
 
         // 返回取消注册函数
         return () => {
@@ -108,7 +108,7 @@ export class EventDispatcher {
         if (!handler) {
             // 移除所有处理器
             this.handlers.delete(eventType);
-            console.log(`EventDispatcher: 移除所有 ${eventType} 事件监听器`);
+
         } else if (typeof handler === 'string') {
             // 按ID移除
             this.removeHandler(eventType, handler);
@@ -117,7 +117,7 @@ export class EventDispatcher {
             const index = handlers.findIndex(h => h.handler === handler);
             if (index !== -1) {
                 const removed = handlers.splice(index, 1)[0];
-                console.log(`EventDispatcher: 移除事件监听器 ${eventType}:${removed.id}`);
+
             }
         }
     }
@@ -396,7 +396,7 @@ export class EventDispatcher {
         const index = handlers.findIndex(h => h.id === handlerId);
         if (index !== -1) {
             handlers.splice(index, 1);
-            console.log(`EventDispatcher: 移除事件监听器 ${eventType}:${handlerId}`);
+
 
             // 如果没有处理器了，删除整个条目
             if (handlers.length === 0) {
@@ -413,6 +413,6 @@ export class EventDispatcher {
         this.clearQueue();
         this.handlers.clear();
         this.handlerCounter = 0;
-        console.log('EventDispatcher: 销毁完成');
+
     }
 }

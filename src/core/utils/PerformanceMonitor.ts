@@ -33,7 +33,7 @@ export class PerformanceMonitor {
         const operationId = `${operation}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         this.activeOperations.set(operationId, performance.now());
         
-        console.log(`PerformanceMonitor: 开始监控操作 ${operation} (ID: ${operationId})`);
+
         return operationId;
     }
 
@@ -73,7 +73,7 @@ export class PerformanceMonitor {
             this.metrics.shift();
         }
 
-        console.log(`PerformanceMonitor: 操作 ${operation} 完成，耗时 ${duration.toFixed(2)}ms`);
+
         return metric;
     }
 
@@ -212,10 +212,10 @@ export class PerformanceMonitor {
     clearMetrics(operation?: string): void {
         if (operation) {
             this.metrics = this.metrics.filter(m => m.operation !== operation);
-            console.log(`PerformanceMonitor: 清除操作 ${operation} 的指标数据`);
+
         } else {
             this.metrics.length = 0;
-            console.log('PerformanceMonitor: 清除所有指标数据');
+
         }
     }
 
@@ -288,6 +288,6 @@ export class PerformanceMonitor {
     destroy(): void {
         this.clearMetrics();
         this.activeOperations.clear();
-        console.log('PerformanceMonitor: 销毁完成');
+
     }
 }

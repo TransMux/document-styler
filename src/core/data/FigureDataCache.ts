@@ -69,7 +69,7 @@ export class FigureDataCache {
         };
 
         this.cache.set(docId, entry);
-        console.log(`FigureDataCache: 缓存文档 ${docId} 的 ${data.length} 个图表数据`);
+
     }
 
     /**
@@ -79,12 +79,12 @@ export class FigureDataCache {
     async clear(docId?: string): Promise<void> {
         if (docId) {
             this.cache.delete(docId);
-            console.log(`FigureDataCache: 清除文档 ${docId} 的缓存`);
+
         } else {
             this.cache.clear();
             this.hits = 0;
             this.misses = 0;
-            console.log('FigureDataCache: 清除所有缓存');
+
         }
     }
 
@@ -139,7 +139,7 @@ export class FigureDataCache {
         }
 
         if (expiredKeys.length > 0) {
-            console.log(`FigureDataCache: 清理了 ${expiredKeys.length} 个过期缓存条目`);
+
         }
     }
 
@@ -159,7 +159,7 @@ export class FigureDataCache {
 
         if (oldestKey) {
             this.cache.delete(oldestKey);
-            console.log(`FigureDataCache: 驱逐最旧的缓存条目 ${oldestKey}`);
+
         }
     }
 

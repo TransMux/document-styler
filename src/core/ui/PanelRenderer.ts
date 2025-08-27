@@ -45,7 +45,7 @@ export class PanelRenderer {
         try {
             await this.createPanel();
             this.isInitialized = true;
-            console.log('PanelRenderer: 初始化完成');
+
 
         } catch (error) {
             console.error('PanelRenderer: 初始化失败:', error);
@@ -75,7 +75,7 @@ export class PanelRenderer {
             // 绑定事件监听器
             this.bindEventListeners();
             
-            console.log(`PanelRenderer: 渲染完成 (第${this.renderCount}次)`);
+
 
         } catch (error) {
             console.error('PanelRenderer: 渲染失败:', error);
@@ -307,7 +307,7 @@ export class PanelRenderer {
      */
     private handleRefreshClick(): void {
         // 这个方法会被UIManager的回调覆盖
-        console.log('PanelRenderer: 刷新点击');
+
     }
 
     /**
@@ -315,7 +315,7 @@ export class PanelRenderer {
      */
     private handleSettingToggle(settingId: string, enabled: boolean): void {
         // 这个方法会被UIManager的回调覆盖
-        console.log(`PanelRenderer: 设置切换 ${settingId} = ${enabled}`);
+
     }
 
     /**
@@ -323,7 +323,7 @@ export class PanelRenderer {
      */
     private handleFigureClick(figureId: string, figureType: string): void {
         // 这个方法会被UIManager的回调覆盖
-        console.log(`PanelRenderer: 图表点击 ${figureType} ${figureId}`);
+
     }
 
     /**
@@ -364,7 +364,7 @@ export class PanelRenderer {
         // 添加到容器
         container.appendChild(this.panelElement);
 
-        console.log('PanelRenderer: 面板元素已创建');
+
     }
 
     /**
@@ -400,7 +400,7 @@ export class PanelRenderer {
      */
     updateConfig(config: Partial<IPanelRendererConfig>): void {
         this.config = { ...this.config, ...config };
-        console.log('PanelRenderer: 配置已更新');
+
     }
 
     /**
@@ -421,7 +421,7 @@ export class PanelRenderer {
             this.isInitialized = false;
             this.renderCount = 0;
 
-            console.log('PanelRenderer: 销毁完成');
+
 
         } catch (error) {
             console.error('PanelRenderer: 销毁失败:', error);

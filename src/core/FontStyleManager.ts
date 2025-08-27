@@ -40,7 +40,7 @@ export class FontStyleManager implements IModule {
             // 检查是否启用了文章字体自定义
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
             if (!docSettings.customFontEnabled) {
-                console.log(`FontStyleManager: 文档 ${docId} 未启用文章字体自定义，清除字体样式`);
+
                 await this.clearDocumentStyles(docId);
                 return;
             }
@@ -53,7 +53,7 @@ export class FontStyleManager implements IModule {
 
             // 如果CSS内容为空或者字体设置都是默认值，则不应用样式
             if (!cssContent || this.isDefaultFontSettings(fontSettings)) {
-                console.log(`FontStyleManager: 文档 ${docId} 使用默认字体设置，不应用自定义样式`);
+
                 return;
             }
 
@@ -65,7 +65,7 @@ export class FontStyleManager implements IModule {
             // 记录样式
             this.appliedStyles.set(docId, styleElement);
 
-            console.log(`FontStyleManager: 已为文档 ${docId} 应用字体样式`);
+
         } catch (error) {
             console.error(`FontStyleManager: 应用文档 ${docId} 字体样式失败:`, error);
         }
@@ -85,7 +85,7 @@ export class FontStyleManager implements IModule {
             }
             this.appliedStyles.delete(docId);
 
-            console.log(`FontStyleManager: 已清除文档 ${docId} 的字体样式`);
+
         } catch (error) {
             console.error(`FontStyleManager: 清除文档 ${docId} 字体样式失败:`, error);
         }
@@ -112,7 +112,7 @@ export class FontStyleManager implements IModule {
                 }
             });
 
-            console.log('FontStyleManager: 已清除所有字体样式');
+
         } catch (error) {
             console.error('FontStyleManager: 清除所有字体样式失败:', error);
         }

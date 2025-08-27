@@ -40,7 +40,7 @@ export class WebSocketHandler {
         try {
             this.setupWebSocketListener();
             this.isActive = true;
-            console.log('WebSocketHandler: 初始化完成');
+
         } catch (error) {
             console.error('WebSocketHandler: 初始化失败:', error);
             throw error;
@@ -70,7 +70,7 @@ export class WebSocketHandler {
             this.handleWebSocketMessage(event);
         };
 
-        console.log('WebSocketHandler: WebSocket监听器已设置');
+
     }
 
     /**
@@ -331,7 +331,7 @@ export class WebSocketHandler {
             }
 
             this.resetStats();
-            console.log('WebSocketHandler: 销毁完成');
+
 
         } catch (error) {
             console.error('WebSocketHandler: 销毁失败:', error);

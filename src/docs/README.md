@@ -224,14 +224,14 @@ await runPerformanceTests();
 
 ```typescript
 const performanceReport = controller.getPerformanceReport();
-console.log('性能报告:', performanceReport);
+
 ```
 
 ### 获取内存报告
 
 ```typescript
 const memoryReport = controller.getMemoryReport();
-console.log('内存报告:', memoryReport);
+
 ```
 
 ### 系统健康检查
@@ -240,7 +240,7 @@ console.log('内存报告:', memoryReport);
 const health = controller.checkSystemHealth();
 if (!health.isHealthy) {
     console.warn('系统警告:', health.warnings);
-    console.log('优化建议:', health.recommendations);
+
 }
 ```
 

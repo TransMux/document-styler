@@ -163,7 +163,7 @@ export async function queryDocumentFigures(docId: string): Promise<any[]> {
     // 从DOM结构中解析符合条件的图表
     const figuresFromDOM = await parseFiguresFromDOM(htmlContent);
 
-    console.log(`从DOM解析到 ${figuresFromDOM.length} 个符合条件的图表`);
+
 
     return figuresFromDOM;
 }
@@ -190,7 +190,7 @@ async function parseFiguresFromDOM(htmlContent: string): Promise<any[]> {
             results.push(...figuresInSuperBlock);
         }
 
-        console.log(`从 ${superBlocks.length} 个超级块中解析到 ${results.length} 个符合条件的图表`);
+
 
     } catch (error) {
         console.error('解析DOM中的图表失败:', error);

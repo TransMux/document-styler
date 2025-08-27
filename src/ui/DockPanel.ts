@@ -480,7 +480,7 @@ export class DockPanel implements IDockPanel {
             if (styleSelect) {
                 const handler = async (e: Event) => {
                     const style = (e.target as HTMLSelectElement).value as HeadingNumberStyle;
-                    console.log(`DocumentStyler: 标题编号样式改变 - 级别${i + 1}, 样式: ${style}`);
+
                     const docId = this.documentManager.getCurrentDocId();
                     if (docId) {
                         await this.settingsManager.setDocumentHeadingNumberStyle(docId, i, style);
@@ -505,7 +505,7 @@ export class DockPanel implements IDockPanel {
             if (formatInput) {
                 const handler = async (e: Event) => {
                     const format = (e.target as HTMLInputElement).value;
-                    console.log(`DocumentStyler: 编号格式改变 - 级别${i + 1}, 格式: ${format}`);
+
                     const docId = this.documentManager.getCurrentDocId();
                     if (docId) {
                         await this.settingsManager.setDocumentNumberingFormat(docId, i, format);
@@ -601,7 +601,7 @@ export class DockPanel implements IDockPanel {
         if (figurePrefixInput) {
             const handler = async (e: Event) => {
                 const prefix = (e.target as HTMLInputElement).value;
-                console.log(`DocumentStyler: 图片编号前缀改变: ${prefix}`);
+
                 const docId = this.documentManager.getCurrentDocId();
                 if (docId) {
                     await this.settingsManager.setDocumentFigurePrefix(docId, prefix);
@@ -618,7 +618,7 @@ export class DockPanel implements IDockPanel {
         if (tablePrefixInput) {
             const handler = async (e: Event) => {
                 const prefix = (e.target as HTMLInputElement).value;
-                console.log(`DocumentStyler: 表格编号前缀改变: ${prefix}`);
+
                 const docId = this.documentManager.getCurrentDocId();
                 if (docId) {
                     await this.settingsManager.setDocumentTablePrefix(docId, prefix);
@@ -696,7 +696,7 @@ export class DockPanel implements IDockPanel {
                 if (!docId) return;
 
                 const fontFamily = (e.target as HTMLSelectElement).value;
-                console.log(`DocumentStyler: 字体族改变: ${fontFamily}`);
+
 
                 await this.settingsManager.setDocumentFontFamily(docId, fontFamily);
                 await this.applyFontSettings(docId);
@@ -713,7 +713,7 @@ export class DockPanel implements IDockPanel {
                 if (!docId) return;
 
                 const fontSize = (e.target as HTMLInputElement).value + 'px';
-                console.log(`DocumentStyler: 字体大小改变: ${fontSize}`);
+
 
                 await this.settingsManager.setDocumentFontSize(docId, fontSize);
                 await this.applyFontSettings(docId);
@@ -735,7 +735,7 @@ export class DockPanel implements IDockPanel {
                 input.value = newSize.toString();
 
                 const fontSize = newSize + 'px';
-                console.log(`DocumentStyler: 字体大小减少: ${fontSize}`);
+
 
                 await this.settingsManager.setDocumentFontSize(docId, fontSize);
                 await this.applyFontSettings(docId);
@@ -757,7 +757,7 @@ export class DockPanel implements IDockPanel {
                 input.value = newSize.toString();
 
                 const fontSize = newSize + 'px';
-                console.log(`DocumentStyler: 字体大小增加: ${fontSize}`);
+
 
                 await this.settingsManager.setDocumentFontSize(docId, fontSize);
                 await this.applyFontSettings(docId);
@@ -774,7 +774,7 @@ export class DockPanel implements IDockPanel {
                 if (!docId) return;
 
                 const lineHeight = (e.target as HTMLInputElement).value;
-                console.log(`DocumentStyler: 行高改变: ${lineHeight}`);
+
 
                 await this.settingsManager.setDocumentFontSettings(docId, { lineHeight });
                 await this.applyFontSettings(docId);
@@ -796,7 +796,7 @@ export class DockPanel implements IDockPanel {
                 input.value = newHeight.toFixed(1);
 
                 const lineHeight = newHeight.toString();
-                console.log(`DocumentStyler: 行高减少: ${lineHeight}`);
+
 
                 await this.settingsManager.setDocumentFontSettings(docId, { lineHeight });
                 await this.applyFontSettings(docId);
@@ -818,7 +818,7 @@ export class DockPanel implements IDockPanel {
                 input.value = newHeight.toFixed(1);
 
                 const lineHeight = newHeight.toString();
-                console.log(`DocumentStyler: 行高增加: ${lineHeight}`);
+
 
                 await this.settingsManager.setDocumentFontSettings(docId, { lineHeight });
                 await this.applyFontSettings(docId);
@@ -840,7 +840,7 @@ export class DockPanel implements IDockPanel {
                 const docId = this.documentManager.getCurrentDocId();
                 if (!docId) return;
 
-                console.log('DocumentStyler: 重置字体设置为默认值');
+
 
                 // 重置字体设置
                 await this.settingsManager.resetDocumentFontSettings(docId);
@@ -1195,12 +1195,12 @@ export class DockPanel implements IDockPanel {
         if (!docId) return;
 
         try {
-            console.log(`DocumentStyler: 开始应用文档 ${docId} 的字体设置`);
+
             
             // 调用主插件的字体设置应用方法
             if (this.pluginInstance && typeof this.pluginInstance.applyFontSettings === 'function') {
                 await this.pluginInstance.applyFontSettings();
-                console.log(`DocumentStyler: 应用文档 ${docId} 的字体设置完成`);
+
             } else {
                 console.warn('DocumentStyler: 主插件实例不可用，无法应用字体设置');
             }
@@ -1281,7 +1281,7 @@ export class DockPanel implements IDockPanel {
         if (exampleElement) {
             const example = NumberStyleConverter.getExample(style);
             exampleElement.textContent = example;
-            console.log(`DocumentStyler: 更新样式示例 - 级别${level + 1}, 样式: ${style}, 示例: ${example}`);
+
         } else {
             console.warn(`DocumentStyler: 未找到样式示例元素 - 级别${level + 1}`);
         }
@@ -1458,7 +1458,7 @@ export class DockPanel implements IDockPanel {
                 lineHeightInput.value = lineHeight.toFixed(1);
             }
 
-            console.log('DocumentStyler: 字体设置UI已更新', fontSettings);
+
         } catch (error) {
             console.error('DocumentStyler: 更新字体设置UI失败:', error);
         }
@@ -1472,7 +1472,7 @@ export class DockPanel implements IDockPanel {
 
         try {
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
-            console.log(`DocumentStyler: 更新文档状态显示 - 文档ID: ${docId}`, docSettings);
+
 
             // 更新标题编号开关
             const headingCheckbox = this.panelElement?.querySelector('#doc-heading-enabled') as HTMLInputElement;
@@ -1523,7 +1523,7 @@ export class DockPanel implements IDockPanel {
                 }
 
                 const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 标题编号开关改变 - 启用: ${enabled}, 文档ID: ${currentDocId}`);
+
 
                 await this.settingsManager.setDocumentSettings(currentDocId, { headingNumberingEnabled: enabled });
                 this.toggleHeadingStylesSection(enabled);
@@ -1540,7 +1540,7 @@ export class DockPanel implements IDockPanel {
             const crossRefHandler = async (e: Event) => {
                 // 检查是否为内测用户
                 if (!this.betaFeatureManager.isBetaVerified()) {
-                    showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+
                     // 恢复复选框状态
                     (e.target as HTMLInputElement).checked = !(e.target as HTMLInputElement).checked;
                     return;
@@ -1554,7 +1554,7 @@ export class DockPanel implements IDockPanel {
                 }
 
                 const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 交叉引用开关改变 - 启用: ${enabled}, 文档ID: ${currentDocId}`);
+
 
                 await this.settingsManager.setDocumentSettings(currentDocId, { crossReferenceEnabled: enabled });
                 this.toggleFiguresSection(enabled);
@@ -1576,7 +1576,7 @@ export class DockPanel implements IDockPanel {
                 }
 
                 const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 文章字体自定义开关改变 - 启用: ${enabled}, 文档ID: ${currentDocId}`);
+
 
                 await this.settingsManager.setDocumentSettings(currentDocId, { customFontEnabled: enabled });
                 this.toggleFontSettingsSection(enabled);
@@ -1610,7 +1610,7 @@ export class DockPanel implements IDockPanel {
         if (headingCheckbox) {
             const handler = async (e: Event) => {
                 const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 全局标题编号开关改变 - 启用: ${enabled}`);
+
                 await this.settingsManager.updateSettings({ headingNumbering: enabled });
                 await this.updatePanel();
             };
@@ -1621,7 +1621,7 @@ export class DockPanel implements IDockPanel {
         if (crossRefCheckbox) {
             const handler = async (e: Event) => {
                 const enabled = (e.target as HTMLInputElement).checked;
-                console.log(`DocumentStyler: 全局交叉引用开关改变 - 启用: ${enabled}`);
+
                 await this.settingsManager.updateSettings({ crossReference: enabled });
                 await this.updatePanel();
             };
@@ -1820,7 +1820,7 @@ export class DockPanel implements IDockPanel {
         const betaButton = this.panelElement.querySelector('#open-beta-verification') as HTMLButtonElement;
         if (betaButton) {
             const handler = () => {
-                console.log('DocumentStyler: 打开内测验证界面');
+
                 this.betaFeatureManager.openVerificationDialog();
             };
             betaButton.addEventListener('click', handler);

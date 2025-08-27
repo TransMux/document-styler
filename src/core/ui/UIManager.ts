@@ -80,7 +80,7 @@ export class UIManager {
             this.setupInteractionCallbacks();
 
             this.isInitialized = true;
-            console.log('UIManager: 初始化完成');
+
 
         } catch (error) {
             console.error('UIManager: 初始化失败:', error);
@@ -177,7 +177,7 @@ export class UIManager {
 
         try {
             await this.renderUI();
-            console.log('UIManager: UI刷新完成');
+
 
         } catch (error) {
             console.error('UIManager: 刷新UI失败:', error);
@@ -251,7 +251,7 @@ export class UIManager {
                 this.highlightElement(targetElement as HTMLElement);
             }
 
-            console.log(`UIManager: 点击图表 ${figureType} ${figureId}`);
+
 
         } catch (error) {
             console.error('UIManager: 处理图表点击失败:', error);
@@ -264,7 +264,7 @@ export class UIManager {
      * @param enabled 是否启用
      */
     private async handleSettingToggle(setting: string, enabled: boolean): Promise<void> {
-        console.log(`UIManager: 设置切换 ${setting} = ${enabled}`);
+
         // 这里可以触发相应的事件或回调
     }
 
@@ -272,7 +272,7 @@ export class UIManager {
      * 处理刷新点击
      */
     private async handleRefreshClick(): Promise<void> {
-        console.log('UIManager: 刷新按钮被点击');
+
         await this.refreshUI();
     }
 
@@ -381,7 +381,7 @@ export class UIManager {
             enableAnimation: this.config.enableAnimation
         });
 
-        console.log('UIManager: 配置已更新');
+
     }
 
     /**
@@ -411,7 +411,7 @@ export class UIManager {
             };
 
             this.isInitialized = false;
-            console.log('UIManager: 销毁完成');
+
 
         } catch (error) {
             console.error('UIManager: 销毁失败:', error);

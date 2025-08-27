@@ -24,7 +24,7 @@ export class CrossReferenceControllerTest {
      * 运行所有测试
      */
     async runAllTests(): Promise<void> {
-        console.log('CrossReferenceControllerTest: 开始运行测试...');
+
 
         await this.testInitialization();
         await this.testDocumentSwitch();
@@ -210,7 +210,7 @@ export class CrossReferenceControllerTest {
         this.testResults.push({ name, passed, error });
         
         if (passed) {
-            console.log(`✅ ${name}: 通过`);
+
         } else {
             console.error(`❌ ${name}: 失败 - ${error}`);
         }
@@ -224,20 +224,20 @@ export class CrossReferenceControllerTest {
         const passedTests = this.testResults.filter(r => r.passed).length;
         const failedTests = totalTests - passedTests;
 
-        console.log('\n=== CrossReferenceController 测试结果 ===');
-        console.log(`总测试数: ${totalTests}`);
-        console.log(`通过: ${passedTests}`);
-        console.log(`失败: ${failedTests}`);
-        console.log(`通过率: ${((passedTests / totalTests) * 100).toFixed(2)}%`);
+
+
+
+
+
 
         if (failedTests > 0) {
-            console.log('\n失败的测试:');
+
             this.testResults
                 .filter(r => !r.passed)
-                .forEach(r => console.log(`- ${r.name}: ${r.error}`));
+
         }
 
-        console.log('=====================================\n');
+
     }
 
     /**

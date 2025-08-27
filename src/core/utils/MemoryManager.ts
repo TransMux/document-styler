@@ -37,7 +37,7 @@ export class MemoryManager {
      */
     registerComponent(componentName: string, getMemoryUsage: () => number): void {
         this.componentRegistry.set(componentName, getMemoryUsage);
-        console.log(`MemoryManager: 注册组件 ${componentName}`);
+
     }
 
     /**
@@ -46,7 +46,7 @@ export class MemoryManager {
      */
     unregisterComponent(componentName: string): void {
         this.componentRegistry.delete(componentName);
-        console.log(`MemoryManager: 注销组件 ${componentName}`);
+
     }
 
     /**
@@ -56,7 +56,7 @@ export class MemoryManager {
      */
     registerCleanupTask(taskName: string, cleanupFn: () => void): void {
         this.cleanupTasks.set(taskName, cleanupFn);
-        console.log(`MemoryManager: 注册清理任务 ${taskName}`);
+
     }
 
     /**
@@ -65,7 +65,7 @@ export class MemoryManager {
      */
     unregisterCleanupTask(taskName: string): void {
         this.cleanupTasks.delete(taskName);
-        console.log(`MemoryManager: 注销清理任务 ${taskName}`);
+
     }
 
     /**
@@ -117,7 +117,7 @@ export class MemoryManager {
      * @param force 是否强制清理
      */
     async performCleanup(force: boolean = false): Promise<void> {
-        console.log('MemoryManager: 开始内存清理...');
+
 
         const beforeStats = this.getCurrentMemoryStats();
 
@@ -125,7 +125,7 @@ export class MemoryManager {
         for (const [taskName, cleanupFn] of this.cleanupTasks.entries()) {
             try {
                 cleanupFn();
-                console.log(`MemoryManager: 执行清理任务 ${taskName}`);
+
             } catch (error) {
                 console.error(`MemoryManager: 清理任务 ${taskName} 执行失败:`, error);
             }
@@ -138,7 +138,7 @@ export class MemoryManager {
         if (force && 'gc' in window && typeof (window as any).gc === 'function') {
             try {
                 (window as any).gc();
-                console.log('MemoryManager: 执行强制垃圾回收');
+
             } catch (error) {
                 console.warn('MemoryManager: 强制垃圾回收失败:', error);
             }
@@ -147,7 +147,7 @@ export class MemoryManager {
         const afterStats = this.getCurrentMemoryStats();
         const memoryFreed = beforeStats.totalMemory - afterStats.totalMemory;
 
-        console.log(`MemoryManager: 内存清理完成，释放了 ${this.formatBytes(memoryFreed)}`);
+
     }
 
     /**
@@ -259,7 +259,7 @@ export class MemoryManager {
 
         }, 30000); // 每30秒检查一次
 
-        console.log('MemoryManager: 开始内存监控');
+
     }
 
     /**
@@ -269,7 +269,7 @@ export class MemoryManager {
         if (this.monitoringInterval) {
             clearInterval(this.monitoringInterval);
             this.monitoringInterval = null;
-            console.log('MemoryManager: 停止内存监控');
+
         }
     }
 
@@ -412,6 +412,6 @@ export class MemoryManager {
         this.componentRegistry.clear();
         this.cleanupTasks.clear();
         this.memoryHistory.length = 0;
-        console.log('MemoryManager: 销毁完成');
+
     }
 }

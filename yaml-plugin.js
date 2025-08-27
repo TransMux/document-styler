@@ -23,7 +23,7 @@ export default function vitePluginYamlI18n(options = {}) {
     return {
         name: 'vite-plugin-yaml-i18n',
         buildStart() {
-            console.log('🌈 Parse I18n: YAML to JSON..');
+
             const inDir = finalOptions.inDir;
             const outDir = finalOptions.outDir
 
@@ -35,11 +35,11 @@ export default function vitePluginYamlI18n(options = {}) {
             const files = fs.readdirSync(inDir);
             for (const file of files) {
                 if (file.endsWith('.yaml') || file.endsWith('.yml')) {
-                    console.log(`-- Parsing ${file}`)
+
                     //检查是否有同名的json文件
                     const jsonFile = file.replace(/\.(yaml|yml)$/, '.json');
                     if (files.includes(jsonFile)) {
-                        console.log(`---- File ${jsonFile} already exists, skipping...`);
+
                         continue;
                     }
                     try {
@@ -48,7 +48,7 @@ export default function vitePluginYamlI18n(options = {}) {
                         const parsed = yaml.load(fileContents);
                         const jsonContent = JSON.stringify(parsed, null, 2);
                         const outputFilePath = resolve(outDir, file.replace(/\.(yaml|yml)$/, '.json'));
-                        console.log(`---- Writing to ${outputFilePath}`);
+
                         fs.writeFileSync(outputFilePath, jsonContent);
                     } catch (error) {
                         this.error(`---- Error parsing YAML file ${file}: ${error.message}`);

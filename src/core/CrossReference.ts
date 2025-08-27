@@ -6,7 +6,6 @@
 import { ICrossReference, IFigureInfo } from "../types";
 import { DocumentManager } from "./DocumentManager";
 import { CrossReferenceController } from "./CrossReferenceController";
-import { showMessage } from "siyuan";
 
 export class CrossReference implements ICrossReference {
     private documentManager: DocumentManager;
@@ -73,7 +72,7 @@ export class CrossReference implements ICrossReference {
             // 仅更新前缀样式，避免重新处理整个文档
             await this.controller.updatePrefixStylesOnly(docId);
 
-            console.log(`CrossReference: 图表前缀样式已更新 - 图片前缀: ${figurePrefix}, 表格前缀: ${tablePrefix}`);
+
         } catch (error) {
             console.error('更新图表前缀样式失败:', error);
         }
@@ -114,7 +113,7 @@ export class CrossReference implements ICrossReference {
 
         // 检查是否为内测用户
         if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
-            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+
             return;
         }
 
@@ -164,7 +163,7 @@ export class CrossReference implements ICrossReference {
 
         // 检查是否为内测用户
         if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
-            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+
             return [];
         }
 
@@ -213,12 +212,12 @@ export class CrossReference implements ICrossReference {
         const oldStyleElement = document.getElementById('document-styler-cross-reference');
         if (oldStyleElement) {
             oldStyleElement.remove();
-            console.log('CrossReference: 移除了旧的样式元素 document-styler-cross-reference');
+
         }
 
         // 现在样式由新的StyleManager统一管理，通过controller处理
         // 这个方法保持向后兼容，但实际样式处理已经迁移到新系统
-        console.log('CrossReference: 样式处理已迁移到新的StyleManager系统');
+
     }
 
     /**
@@ -233,7 +232,7 @@ export class CrossReference implements ICrossReference {
         let tableCount = 0;
 
         // 从DOM解析的数据，按照domOrder排序
-        console.log('CrossReference: 使用DOM解析的数据，按domOrder排序');
+
         figures.sort((a, b) => {
             if (a.domOrder !== undefined && b.domOrder !== undefined) {
                 return a.domOrder - b.domOrder;
@@ -241,13 +240,6 @@ export class CrossReference implements ICrossReference {
             // 如果没有domOrder，回退到ID排序
             return a.id.localeCompare(b.id);
         });
-
-        console.log('CrossReference: 排序后的图片表格:', figures.map(f => ({
-            id: f.id,
-            type: f.figureType,
-            domOrder: f.domOrder,
-            caption: f.caption
-        })));
 
         for (const figure of figures) {
             if (figure.figureType === 'image') {
@@ -358,7 +350,7 @@ export class CrossReference implements ICrossReference {
         const oldStyleElement = document.getElementById('document-styler-cross-reference');
         if (oldStyleElement) {
             oldStyleElement.remove();
-            console.log('CrossReference: 移除了旧的样式元素 document-styler-cross-reference');
+
         }
 
         // 新的样式由StyleManager管理，通过controller清除
@@ -375,15 +367,15 @@ export class CrossReference implements ICrossReference {
         try {
             // 检查当前文档是否受影响
             if (!this.documentManager.isCurrentDocumentAffected(msg)) {
-                console.log('CrossReference: WebSocket消息不影响当前文档，跳过处理');
+
                 return;
             }
 
-            console.log('CrossReference: 收到影响当前文档的WebSocket消息，检查是否需要更新图表');
+
 
             // 分析是否需要更新图片表格索引或超级块结构
             if (this.needsFigureUpdate(msg)) {
-                console.log('CrossReference: 检测到需要更新图表，开始处理');
+
                 const currentProtyle = this.documentManager.getCurrentProtyle();
                 if (currentProtyle) {
                     // 延迟一小段时间以确保DOM更新完成
@@ -395,7 +387,7 @@ export class CrossReference implements ICrossReference {
                             // 通知侧边栏面板更新图表列表
                             if (this.panelUpdateCallback) {
                                 await this.panelUpdateCallback();
-                                console.log('CrossReference: 侧边栏面板已更新');
+
                             }
                         } catch (error) {
                             console.error('CrossReference: 延迟更新失败:', error);
@@ -403,7 +395,7 @@ export class CrossReference implements ICrossReference {
                     }, 100);
                 }
             } else {
-                console.log('CrossReference: WebSocket消息不需要更新图表');
+
             }
         } catch (error) {
             console.error('CrossReference: 处理 transaction 消息失败:', error);
@@ -417,7 +409,7 @@ export class CrossReference implements ICrossReference {
      */
     private needsFigureUpdate(msg: any): boolean {
         if (!msg.data || !Array.isArray(msg.data)) {
-            console.log('CrossReference: 消息数据格式不正确');
+
             return false;
         }
 
@@ -431,16 +423,11 @@ export class CrossReference implements ICrossReference {
                 // 检查操作数据中是否包含相关节点类型
                 if (operation.data && typeof operation.data === 'string') {
                     const isFigureRelated = operation.data.includes('data-type="NodeTable"') ||
-                                          operation.data.includes('<img') ||
-                                          operation.data.includes('data-type="NodeSuperBlock"') ||
-                                          operation.data.includes('data-sb-layout');
+                        operation.data.includes('<img') ||
+                        operation.data.includes('data-type="NodeSuperBlock"') ||
+                        operation.data.includes('data-sb-layout');
 
                     if (isFigureRelated) {
-                        console.log(`CrossReference: 检测到图表相关操作 - 动作: ${operation.action}, 数据包含: ${
-                            operation.data.includes('data-type="NodeTable"') ? 'NodeTable ' : ''
-                        }${operation.data.includes('<img') ? 'img ' : ''}${
-                            operation.data.includes('data-type="NodeSuperBlock"') ? 'NodeSuperBlock ' : ''
-                        }${operation.data.includes('data-sb-layout') ? 'sb-layout' : ''}`);
                         return true;
                     }
                 }
@@ -449,7 +436,6 @@ export class CrossReference implements ICrossReference {
             });
         });
 
-        console.log(`CrossReference: needsFigureUpdate 结果: ${needsUpdate}`);
         return needsUpdate;
     }
 
@@ -474,7 +460,7 @@ export class CrossReference implements ICrossReference {
                         key: '@',
                         hint: this.generateCrossReferenceHints.bind(this)
                     });
-                    console.log('CrossReference: 已注册@符号交叉引用功能');
+
                 }
             }
         });
@@ -495,7 +481,7 @@ export class CrossReference implements ICrossReference {
                 const index = protyle.options.hint.extend.findIndex((item: any) => item.key === '@');
                 if (index !== -1) {
                     protyle.options.hint.extend.splice(index, 1);
-                    console.log('CrossReference: 已注销@符号交叉引用功能');
+
                 }
             }
         });
@@ -526,7 +512,7 @@ export class CrossReference implements ICrossReference {
                                             key: '@',
                                             hint: this.generateCrossReferenceHints.bind(this)
                                         });
-                                        console.log('CrossReference: 为新protyle注册@符号交叉引用功能');
+
                                     }
                                 }
                             }, 100);
@@ -565,12 +551,12 @@ export class CrossReference implements ICrossReference {
 
             // 过滤匹配的图片和表格
             figures.forEach((figure) => {
-                const searchText = `${figure.type === 'image' ? '图' : '表'} ${figure.number}`;
+                const searchText = `${figure.type === 'image' ? '图' : '表'} ${figure.number} `;
                 const content = figure.content || figure.caption || '';
 
                 if (!key || searchText.includes(key) || content.includes(key)) {
                     hints.push({
-                        value: `<span data-type="cross-ref" data-figure-id="${figure.id}" data-figure-type="${figure.type}" data-figure-number="${figure.number}">${searchText}</span>`,
+                        value: `< span data - type="cross-ref" data - figure - id="${figure.id}" data - figure - type="${figure.type}" data - figure - number="${figure.number}" > ${searchText} </span>`,
                         html: `<div class="b3-list-item__first">
                             <svg class="b3-list-item__graphic">
                                 <use xlink:href="#icon${figure.type === 'image' ? 'Image' : 'Table'}"></use>
@@ -626,19 +612,19 @@ export class CrossReference implements ICrossReference {
     async forceUpdate(): Promise<void> {
         // 检查是否为内测用户
         if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
-            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+
             return;
         }
 
         const currentProtyle = this.documentManager.getCurrentProtyle();
         if (currentProtyle) {
-            console.log('CrossReference: 手动触发交叉引用更新');
+
             await this.applyCrossReference(currentProtyle);
 
             // 通知侧边栏面板更新图表列表
             if (this.panelUpdateCallback) {
                 await this.panelUpdateCallback();
-                console.log('CrossReference: 侧边栏面板已更新');
+
             }
         } else {
             console.warn('CrossReference: 无法手动更新，当前protyle不存在');
@@ -654,7 +640,7 @@ export class CrossReference implements ICrossReference {
     scrollToFigure(figureId: string, figureType?: string, figureNumber?: string): void {
         // 检查是否为内测用户
         if (this.betaFeatureManager && !this.betaFeatureManager.isBetaVerified()) {
-            showMessage("交叉引用功能仅对内测用户开放，请联系开发者获取内测码", 3000, "info");
+
             return;
         }
 
@@ -678,7 +664,7 @@ export class CrossReference implements ICrossReference {
                 }, 300);
             }, 1500);
 
-            console.log(`CrossReference: 跳转到${figureType === 'image' ? '图片' : '表格'} ${figureNumber}`);
+
         } else {
             console.warn(`CrossReference: 未找到ID为 ${figureId} 的${figureType === 'image' ? '图片' : '表格'}`);
         }

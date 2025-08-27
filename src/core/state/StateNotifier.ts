@@ -42,7 +42,7 @@ export class StateNotifier {
         };
 
         this.listeners.set(id, listener);
-        console.log(`StateNotifier: 添加监听器 ${id}`);
+
 
         // 返回取消订阅函数
         return () => {
@@ -56,7 +56,7 @@ export class StateNotifier {
      */
     unsubscribe(listenerId: string): void {
         if (this.listeners.delete(listenerId)) {
-            console.log(`StateNotifier: 移除监听器 ${listenerId}`);
+
         }
     }
 
@@ -237,7 +237,7 @@ export class StateNotifier {
      */
     clearEventQueue(): void {
         this.eventQueue.length = 0;
-        console.log('StateNotifier: 清空事件队列');
+
     }
 
     /**
@@ -303,6 +303,6 @@ export class StateNotifier {
         this.listenerCounter = 0;
         this.isProcessing = false;
 
-        console.log('StateNotifier: 销毁完成');
+
     }
 }

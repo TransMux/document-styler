@@ -67,7 +67,7 @@ export class EventManager {
             }
 
             this.isInitialized = true;
-            console.log('EventManager: 初始化完成');
+
 
         } catch (error) {
             console.error('EventManager: 初始化失败:', error);
@@ -156,7 +156,7 @@ export class EventManager {
         this.dispatcher.pause();
         this.webSocketHandler.pause();
         this.documentEventHandler.pause();
-        console.log('EventManager: 暂停事件处理');
+
     }
 
     /**
@@ -166,7 +166,7 @@ export class EventManager {
         this.dispatcher.resume();
         this.webSocketHandler.resume();
         this.documentEventHandler.resume();
-        console.log('EventManager: 恢复事件处理');
+
     }
 
     /**
@@ -174,7 +174,7 @@ export class EventManager {
      */
     clearQueue(): void {
         this.dispatcher.clearQueue();
-        console.log('EventManager: 清空事件队列');
+
     }
 
     /**
@@ -190,7 +190,7 @@ export class EventManager {
             eventDelay: this.config.eventDelay
         });
 
-        console.log('EventManager: 配置已更新');
+
     }
 
     /**
@@ -257,7 +257,7 @@ export class EventManager {
             await this.dispatcher.destroy();
 
             this.isInitialized = false;
-            console.log('EventManager: 销毁完成');
+
 
         } catch (error) {
             console.error('EventManager: 销毁失败:', error);

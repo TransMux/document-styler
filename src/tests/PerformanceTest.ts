@@ -30,7 +30,7 @@ export class PerformanceTest {
      * 运行所有性能测试
      */
     async runAllTests(): Promise<void> {
-        console.log('PerformanceTest: 开始运行性能测试...');
+
 
         await this.controller.init();
 
@@ -215,7 +215,7 @@ export class PerformanceTest {
             ? this.formatBytes(threshold)
             : `${threshold}ms`;
 
-        console.log(`${status} ${testName}: ${durationStr} / ${memoryStr} (阈值: ${thresholdStr})`);
+
     }
 
     /**
@@ -241,11 +241,11 @@ export class PerformanceTest {
         const passedTests = this.testResults.filter(r => r.passed).length;
         const failedTests = totalTests - passedTests;
 
-        console.log('\n=== 性能测试结果 ===');
-        console.log(`总测试数: ${totalTests}`);
-        console.log(`通过: ${passedTests}`);
-        console.log(`失败: ${failedTests}`);
-        console.log(`通过率: ${((passedTests / totalTests) * 100).toFixed(2)}%`);
+
+
+
+
+
 
         // 统计平均性能
         const avgDuration = this.testResults
@@ -256,11 +256,11 @@ export class PerformanceTest {
         const totalMemory = this.testResults
             .reduce((sum, r) => sum + r.memoryUsage, 0);
 
-        console.log(`平均执行时间: ${avgDuration.toFixed(2)}ms`);
-        console.log(`总内存使用: ${this.formatBytes(totalMemory)}`);
+
+
 
         if (failedTests > 0) {
-            console.log('\n未通过的测试:');
+
             this.testResults
                 .filter(r => !r.passed)
                 .forEach(r => {
@@ -270,11 +270,11 @@ export class PerformanceTest {
                     const threshold = r.threshold > 1024 * 1024
                         ? this.formatBytes(r.threshold)
                         : `${r.threshold}ms`;
-                    console.log(`- ${r.testName}: ${actual} > ${threshold}`);
+
                 });
         }
 
-        console.log('==================\n');
+
     }
 
     /**

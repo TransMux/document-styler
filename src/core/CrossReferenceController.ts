@@ -84,7 +84,7 @@ export class CrossReferenceController {
         }
 
         try {
-            console.log('CrossReferenceController: 开始初始化...');
+
 
             // 初始化各个组件
             await this.eventManager.init();
@@ -100,7 +100,7 @@ export class CrossReferenceController {
             this.setupStateListeners();
 
             this.isInitialized = true;
-            console.log('CrossReferenceController: 初始化完成');
+
 
             // 发送初始化完成事件
             await this.eventManager.emit('system:ready');
@@ -125,12 +125,12 @@ export class CrossReferenceController {
         const now = Date.now();
         const lastTime = this.lastProcessTime.get(docId);
         if (lastTime && (now - lastTime) < 500) { // 500ms内的重复请求直接忽略
-            console.log(`CrossReferenceController: 忽略重复的文档切换请求 ${docId}`);
+
             return;
         }
 
         if (this.processingDocs.has(docId)) {
-            console.log(`CrossReferenceController: 文档 ${docId} 正在处理中，跳过`);
+
             return;
         }
 
@@ -140,7 +140,7 @@ export class CrossReferenceController {
         const operationId = this.performanceMonitor.startOperation('document-switch', { docId });
 
         try {
-            console.log(`CrossReferenceController: 处理文档切换 ${docId}`);
+
 
             // 更新当前文档ID
             this.currentDocId = docId;
@@ -184,7 +184,7 @@ export class CrossReferenceController {
                 await this.uiManager.setFigures(docId, figures);
             }
 
-            console.log(`CrossReferenceController: 文档 ${docId} 处理完成，包含 ${figures.length} 个图表`);
+
 
         } catch (error) {
             console.error(`CrossReferenceController: 处理文档 ${docId} 失败:`, error);
@@ -227,7 +227,7 @@ export class CrossReferenceController {
             // 获取当前文档的图表数据（从缓存中获取，避免重新解析）
             const state = this.figureState.getState(docId);
             if (!state || !state.figures || state.figures.length === 0) {
-                console.log(`CrossReferenceController: 文档 ${docId} 没有图表数据，跳过前缀样式更新`);
+
                 return;
             }
 
@@ -239,7 +239,7 @@ export class CrossReferenceController {
                 tablePrefix: this.config.tablePrefix
             });
 
-            console.log(`CrossReferenceController: 文档 ${docId} 前缀样式已更新`);
+
         } catch (error) {
             console.error(`CrossReferenceController: 更新文档 ${docId} 前缀样式失败:`, error);
         }
@@ -283,7 +283,7 @@ export class CrossReferenceController {
                 await this.uiManager.clearState();
             }
 
-            console.log(`CrossReferenceController: 已禁用文档 ${targetDocId} 的交叉引用`);
+
 
         } catch (error) {
             console.error(`CrossReferenceController: 禁用文档 ${targetDocId} 的交叉引用失败:`, error);
@@ -348,7 +348,7 @@ export class CrossReferenceController {
      * 执行性能优化
      */
     async optimizePerformance(): Promise<void> {
-        console.log('CrossReferenceController: 开始性能优化...');
+
 
         // 清理过期缓存
         await this.figureManager.clearCache();
@@ -359,7 +359,7 @@ export class CrossReferenceController {
         // 清理性能指标（保留最近的）
         this.performanceMonitor.clearMetrics();
 
-        console.log('CrossReferenceController: 性能优化完成');
+
     }
 
     /**
@@ -447,7 +447,7 @@ export class CrossReferenceController {
             }
         });
 
-        console.log('CrossReferenceController: 事件监听器已设置');
+
     }
 
     /**
@@ -455,7 +455,7 @@ export class CrossReferenceController {
      */
     private setupStateListeners(): void {
         this.figureState.subscribe(async (docId: string, state: any, source: string) => {
-            console.log(`CrossReferenceController: 状态变化 ${docId} (来源: ${source})`);
+
             
             // 如果是当前文档且启用UI，更新UI状态
             if (docId === this.currentDocId && this.config.enableUI) {
@@ -469,7 +469,7 @@ export class CrossReferenceController {
             }
         });
 
-        console.log('CrossReferenceController: 状态监听器已设置');
+
     }
 
     /**
@@ -525,7 +525,7 @@ export class CrossReferenceController {
             });
         }
 
-        console.log('CrossReferenceController: 配置已更新');
+
     }
 
     /**
@@ -569,7 +569,7 @@ export class CrossReferenceController {
             this.styleManager.optimizeMemory();
         });
 
-        console.log('CrossReferenceController: 内存监控已设置');
+
     }
 
     /**
@@ -581,7 +581,7 @@ export class CrossReferenceController {
         }
 
         try {
-            console.log('CrossReferenceController: 开始销毁...');
+
 
             // 清除当前文档的样式
             if (this.currentDocId) {
@@ -605,7 +605,7 @@ export class CrossReferenceController {
             this.isInitialized = false;
             this.currentDocId = undefined;
 
-            console.log('CrossReferenceController: 销毁完成');
+
 
         } catch (error) {
             console.error('CrossReferenceController: 销毁失败:', error);

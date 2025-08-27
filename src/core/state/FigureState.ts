@@ -94,7 +94,7 @@ export class FigureState {
             // 检查是否需要更新
             const currentState = this.states.get(docId);
             if (!force && currentState && this.isSameData(currentState.figures, figures)) {
-                console.log(`FigureState: 文档 ${docId} 的数据未变化，跳过更新`);
+
                 return;
             }
 
@@ -119,7 +119,7 @@ export class FigureState {
                 await this.notifier.notifyStateChanged(docId, newState, source);
             }
 
-            console.log(`FigureState: 更新文档 ${docId} 的状态，包含 ${figures.length} 个图表`);
+
 
         } catch (error) {
             console.error(`FigureState: 设置文档 ${docId} 的状态失败:`, error);
@@ -199,7 +199,7 @@ export class FigureState {
         await this.cache.clear(docId);
         await this.notifier.notifyStateCleared(docId);
 
-        console.log(`FigureState: 清除文档 ${docId} 的状态`);
+
     }
 
     /**
@@ -360,7 +360,7 @@ export class FigureState {
         }
 
         if (expiredDocs.length > 0) {
-            console.log(`FigureState: 清理了 ${expiredDocs.length} 个过期状态`);
+
         }
     }
 
@@ -379,7 +379,7 @@ export class FigureState {
             this.cache.destroy();
             this.notifier.destroy();
 
-            console.log('FigureState: 销毁完成');
+
 
         } catch (error) {
             console.error('FigureState: 销毁失败:', error);

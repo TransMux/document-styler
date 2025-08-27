@@ -13,9 +13,9 @@ const isDev = env.NODE_ENV === 'development';
 
 const outputDir = isDev ? "dev" : "dist";
 
-console.log("isDev=>", isDev);
-console.log("isSrcmap=>", isSrcmap);
-console.log("outputDir=>", outputDir);
+
+
+
 
 export default defineConfig({
     resolve: {

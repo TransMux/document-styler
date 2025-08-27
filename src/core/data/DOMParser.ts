@@ -29,7 +29,7 @@ export class FigureDOMParser {
                 results.push(...figuresInSuperBlock);
             }
 
-            console.log(`DOMParser: 从 ${superBlocks.length} 个超级块中解析到 ${results.length} 个图表`);
+
             return results;
 
         } catch (error) {

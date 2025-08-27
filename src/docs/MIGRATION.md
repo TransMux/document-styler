@@ -123,11 +123,11 @@ window.addEventListener('switch-protyle', handleDocumentSwitch);
 ```typescript
 // 使用统一事件管理
 controller.eventManager.on('document:switch', (data) => {
-    console.log('文档切换:', data);
+
 });
 
 controller.eventManager.on('figure:updated', (data) => {
-    console.log('图表更新:', data);
+
 });
 ```
 

@@ -83,11 +83,11 @@ export class BetaFeatureManager implements IBetaFeatureManager {
                 betaFeatures: updatedBetaSettings
             });
 
-            console.log('DocumentStyler: 内测验证成功');
+
             return true;
         }
 
-        console.log('DocumentStyler: 内测码无效');
+
         return false;
     }
 

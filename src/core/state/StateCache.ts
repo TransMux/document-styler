@@ -67,7 +67,7 @@ export class StateCache {
         };
 
         this.cache.set(docId, entry);
-        console.log(`StateCache: 缓存文档 ${docId} 的状态`);
+
     }
 
     /**
@@ -77,10 +77,10 @@ export class StateCache {
     async clear(docId?: string): Promise<void> {
         if (docId) {
             this.cache.delete(docId);
-            console.log(`StateCache: 清除文档 ${docId} 的缓存`);
+
         } else {
             this.cache.clear();
-            console.log('StateCache: 清除所有缓存');
+
         }
     }
 
@@ -160,7 +160,7 @@ export class StateCache {
 
         if (leastUsedKey) {
             this.cache.delete(leastUsedKey);
-            console.log(`StateCache: 驱逐最少使用的缓存条目 ${leastUsedKey}`);
+
         }
     }
 
@@ -181,7 +181,7 @@ export class StateCache {
         }
 
         if (expiredKeys.length > 0) {
-            console.log(`StateCache: 清理了 ${expiredKeys.length} 个过期缓存条目`);
+
         }
     }
 
@@ -244,7 +244,7 @@ export class StateCache {
         for (const [docId, state] of states.entries()) {
             await this.set(docId, state);
         }
-        console.log(`StateCache: 预热了 ${states.size} 个状态`);
+
     }
 
     /**
@@ -269,6 +269,6 @@ export class StateCache {
     destroy(): void {
         this.stopCleanupTimer();
         this.cache.clear();
-        console.log('StateCache: 销毁完成');
+
     }
 }

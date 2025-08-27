@@ -55,7 +55,7 @@ export class FigureNumbering {
                 return a.id.localeCompare(b.id);
             });
 
-            console.log(`FigureNumbering: 为 ${images.length} 个图片和 ${tables.length} 个表格分配了编号`);
+
             return allNumbered;
 
         } catch (error) {

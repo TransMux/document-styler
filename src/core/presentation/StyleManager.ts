@@ -58,7 +58,7 @@ export class StyleManager {
             // 如果没有图表，只清除旧样式
             if (!figures || figures.length === 0) {
                 await this.clearDocumentStyles(docId);
-                console.log(`StyleManager: 文档 ${docId} 没有图表，已清除旧样式`);
+
                 return;
             }
 
@@ -68,7 +68,7 @@ export class StyleManager {
             // 如果生成的CSS为空，也只清除旧样式
             if (!cssContent || cssContent.trim() === '') {
                 await this.clearDocumentStyles(docId);
-                console.log(`StyleManager: 文档 ${docId} 生成的CSS为空，已清除旧样式`);
+
                 return;
             }
 
@@ -84,7 +84,7 @@ export class StyleManager {
             // 记录新样式
             this.appliedStyles.set(docId, styleId);
 
-            console.log(`StyleManager: 为文档 ${docId} 应用了交叉引用样式，包含 ${figures.length} 个图表`);
+
 
         } catch (error) {
             console.error(`StyleManager: 应用文档 ${docId} 的样式失败:`, error);
@@ -118,7 +118,7 @@ export class StyleManager {
 
         try {
             await this.clearDocumentStyles(docId);
-            console.log(`StyleManager: 清除了文档 ${docId} 的交叉引用样式`);
+
 
         } catch (error) {
             console.error(`StyleManager: 清除文档 ${docId} 的样式失败:`, error);
@@ -150,7 +150,7 @@ export class StyleManager {
             }
 
             this.appliedStyles.clear();
-            console.log('StyleManager: 清除了所有交叉引用样式');
+
 
         } catch (error) {
             console.error('StyleManager: 清除所有样式失败:', error);
@@ -273,7 +273,7 @@ export class StyleManager {
         this.styleApplicator.cleanup();
         
         // 可以添加更多优化逻辑
-        console.log('StyleManager: 内存优化完成');
+
     }
 
     /**
@@ -283,7 +283,7 @@ export class StyleManager {
         try {
             await this.clearAllStyles();
             this.styleApplicator.destroy();
-            console.log('StyleManager: 销毁完成');
+
 
         } catch (error) {
             console.error('StyleManager: 销毁失败:', error);

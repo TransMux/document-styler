@@ -308,7 +308,7 @@ interface IMemoryStats {
 ```typescript
 // 监听事件
 const unsubscribe = controller.eventManager.on('document:switch', (data) => {
-    console.log('文档切换:', data);
+
 });
 
 // 取消监听
@@ -316,7 +316,7 @@ unsubscribe();
 
 // 一次性监听
 await controller.eventManager.once('system:ready', () => {
-    console.log('系统已就绪');
+
 });
 
 // 发送事件
@@ -346,17 +346,17 @@ await controller.handleDocumentSwitch('20231201120000-abc123');
 
 // 获取图表列表
 const figures = await controller.getFiguresList('20231201120000-abc123');
-console.log('图表列表:', figures);
+
 
 // 获取性能报告
 const performanceReport = controller.getPerformanceReport();
-console.log('性能报告:', performanceReport);
+
 
 // 检查系统健康
 const health = controller.checkSystemHealth();
 if (!health.isHealthy) {
     console.warn('系统警告:', health.warnings);
-    console.log('建议:', health.recommendations);
+
 }
 
 // 销毁控制器
@@ -378,7 +378,7 @@ const controller = new CrossReferenceController({
 
 // 监听事件
 controller.eventManager.on('figure:added', (data) => {
-    console.log('新增图表:', data);
+
 });
 
 // 性能监控

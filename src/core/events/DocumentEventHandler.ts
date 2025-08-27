@@ -34,7 +34,7 @@ export class DocumentEventHandler {
         try {
             this.setupDocumentEventListeners();
             this.isActive = true;
-            console.log('DocumentEventHandler: 初始化完成');
+
 
         } catch (error) {
             console.error('DocumentEventHandler: 初始化失败:', error);
@@ -61,7 +61,7 @@ export class DocumentEventHandler {
         // 编辑器失焦事件
         this.registerEventListener('blur-protyle', this.handleDocumentBlur.bind(this));
 
-        console.log('DocumentEventHandler: 文档事件监听器已设置');
+
     }
 
     /**
@@ -88,7 +88,7 @@ export class DocumentEventHandler {
         window.addEventListener(eventName, wrappedHandler);
         this.eventListeners.set(eventName, wrappedHandler);
 
-        console.log(`DocumentEventHandler: 注册事件监听器 ${eventName}`);
+
     }
 
     /**
@@ -102,7 +102,7 @@ export class DocumentEventHandler {
         }
 
         await this.dispatcher.emit('document:switch', data);
-        console.log(`DocumentEventHandler: 文档切换 - ${data.docId}`);
+
     }
 
     /**
@@ -116,7 +116,7 @@ export class DocumentEventHandler {
         }
 
         await this.dispatcher.emit('document:loaded', data);
-        console.log(`DocumentEventHandler: 文档加载 - ${data.docId}`);
+
     }
 
     /**
@@ -130,7 +130,7 @@ export class DocumentEventHandler {
         }
 
         await this.dispatcher.emit('document:closed', data);
-        console.log(`DocumentEventHandler: 文档关闭 - ${data.docId}`);
+
     }
 
     /**
@@ -200,7 +200,7 @@ export class DocumentEventHandler {
      */
     pause(): void {
         this.isPaused = true;
-        console.log('DocumentEventHandler: 暂停事件处理');
+
     }
 
     /**
@@ -208,7 +208,7 @@ export class DocumentEventHandler {
      */
     resume(): void {
         this.isPaused = false;
-        console.log('DocumentEventHandler: 恢复事件处理');
+
     }
 
     /**
@@ -234,7 +234,7 @@ export class DocumentEventHandler {
      */
     resetStats(): void {
         this.eventCount = 0;
-        console.log('DocumentEventHandler: 统计信息已重置');
+
     }
 
     /**
@@ -249,7 +249,7 @@ export class DocumentEventHandler {
         }
 
         await this.dispatcher.emit(`document:${eventType}`, data);
-        console.log(`DocumentEventHandler: 手动触发事件 document:${eventType}`);
+
     }
 
     /**
@@ -318,7 +318,7 @@ export class DocumentEventHandler {
             // 移除所有事件监听器
             for (const [eventName, handler] of this.eventListeners.entries()) {
                 window.removeEventListener(eventName, handler);
-                console.log(`DocumentEventHandler: 移除事件监听器 ${eventName}`);
+
             }
 
             this.eventListeners.clear();
@@ -326,7 +326,7 @@ export class DocumentEventHandler {
             this.isPaused = false;
             this.resetStats();
 
-            console.log('DocumentEventHandler: 销毁完成');
+
 
         } catch (error) {
             console.error('DocumentEventHandler: 销毁失败:', error);

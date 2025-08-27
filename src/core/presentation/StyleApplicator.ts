@@ -50,7 +50,7 @@ export class StyleApplicator {
             // 记录样式
             this.appliedStyles.set(styleId, styleElement);
 
-            console.log(`StyleApplicator: 应用样式 ${styleId}，内容长度: ${cssContent.length}`);
+
             return styleId;
 
         } catch (error) {
@@ -73,7 +73,7 @@ export class StyleApplicator {
             if (styleElement && styleElement.parentNode) {
                 styleElement.parentNode.removeChild(styleElement);
                 this.appliedStyles.delete(styleId);
-                console.log(`StyleApplicator: 移除样式 ${styleId}`);
+
             }
 
         } catch (error) {
@@ -96,7 +96,7 @@ export class StyleApplicator {
             const styleElement = this.appliedStyles.get(styleId);
             if (styleElement) {
                 styleElement.textContent = cssContent;
-                console.log(`StyleApplicator: 更新样式 ${styleId}`);
+
             } else {
                 console.warn(`StyleApplicator: 样式 ${styleId} 不存在，无法更新`);
             }
@@ -264,7 +264,7 @@ export class StyleApplicator {
         }
 
         if (invalidIds.length > 0) {
-            console.log(`StyleApplicator: 清理了 ${invalidIds.length} 个无效样式引用`);
+
         }
     }
 
@@ -331,7 +331,7 @@ export class StyleApplicator {
             this.appliedStyles.clear();
             this.styleCounter = 0;
 
-            console.log('StyleApplicator: 销毁完成');
+
 
         } catch (error) {
             console.error('StyleApplicator: 销毁失败:', error);

@@ -24,7 +24,7 @@ export class InteractionHandler {
         }
 
         this.isInitialized = true;
-        console.log('InteractionHandler: 初始化完成');
+
     }
 
     /**
@@ -95,7 +95,7 @@ export class InteractionHandler {
             }
         }
 
-        console.log(`InteractionHandler: 触发图表点击 ${figureType} ${figureId}`);
+
     }
 
     /**
@@ -118,7 +118,7 @@ export class InteractionHandler {
             }
         }
 
-        console.log(`InteractionHandler: 触发设置切换 ${setting} = ${enabled}`);
+
     }
 
     /**
@@ -139,7 +139,7 @@ export class InteractionHandler {
             }
         }
 
-        console.log('InteractionHandler: 触发刷新点击');
+
     }
 
     /**
@@ -322,7 +322,7 @@ export class InteractionHandler {
     private async copyToClipboard(text: string): Promise<void> {
         try {
             await navigator.clipboard.writeText(text);
-            console.log(`InteractionHandler: 已复制到剪贴板: ${text}`);
+
         } catch (error) {
             console.error('InteractionHandler: 复制到剪贴板失败:', error);
         }
@@ -357,7 +357,7 @@ export class InteractionHandler {
      */
     resetStats(): void {
         this.interactionCount = 0;
-        console.log('InteractionHandler: 统计信息已重置');
+
     }
 
     /**
@@ -381,7 +381,7 @@ export class InteractionHandler {
             this.isInitialized = false;
             this.resetStats();
 
-            console.log('InteractionHandler: 销毁完成');
+
 
         } catch (error) {
             console.error('InteractionHandler: 销毁失败:', error);

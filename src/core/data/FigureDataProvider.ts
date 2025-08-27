@@ -45,13 +45,13 @@ export class FigureDataProvider {
             if (useCache && !shouldSkipCache) {
                 const cached = await this.cache.get(docId);
                 if (cached) {
-                    console.log(`FigureDataProvider: 从缓存获取文档 ${docId} 的图表数据`);
+
                     return this.filterByTypes(cached, includeTypes);
                 }
             }
 
             if (fromWebSocket) {
-                console.log(`FigureDataProvider: WebSocket触发更新，强制跳过缓存获取文档 ${docId} 的图表数据`);
+
             }
 
             // 获取原始数据
@@ -65,7 +65,7 @@ export class FigureDataProvider {
                 await this.cache.set(docId, processedData, config.cacheExpiry);
             }
 
-            console.log(`FigureDataProvider: 获取到文档 ${docId} 的 ${processedData.length} 个图表`);
+
             return this.filterByTypes(processedData, includeTypes);
 
         } catch (error) {

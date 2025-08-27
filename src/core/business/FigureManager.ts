@@ -52,7 +52,7 @@ export class FigureManager {
             // 重新编号
             const numberedFigures = this.numbering.assignNumbers(processedFigures);
 
-            console.log(`FigureManager: 文档 ${docId} 共处理 ${numberedFigures.length} 个图表`);
+
             return numberedFigures;
 
         } catch (error) {

@@ -26,7 +26,7 @@ export class APIClient {
         if (useCache) {
             const cached = this.getFromCache(cacheKey);
             if (cached) {
-                console.log(`APIClient: 从缓存获取文档 ${docId} 的内容`);
+
                 return cached;
             }
         }
@@ -39,7 +39,7 @@ export class APIClient {
                 this.setCache(cacheKey, content);
             }
 
-            console.log(`APIClient: 获取文档 ${docId} 的内容成功，长度: ${content.length}`);
+
             return content;
 
         } catch (error) {

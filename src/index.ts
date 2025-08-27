@@ -175,7 +175,7 @@ export default class DocumentStylerPlugin extends Plugin {
             // 注册侧边栏面板
             this.registerDockPanel();
 
-            console.log('DocumentStyler plugin loaded successfully');
+
         } catch (error) {
             console.error('DocumentStyler plugin failed to load:', error);
         }
@@ -195,7 +195,7 @@ export default class DocumentStylerPlugin extends Plugin {
             // 清理全局引用
             delete (window as any).documentStylerPlugin;
 
-            console.log('DocumentStyler plugin unloaded successfully');
+
         } catch (error) {
             console.error('DocumentStyler plugin failed to unload:', error);
         }
@@ -293,7 +293,7 @@ export default class DocumentStylerPlugin extends Plugin {
                     protyle.wysiwyg.element.setAttribute('data-doc-id', docId);
                 }
 
-                console.log(`DocumentStyler: 已为文档 ${docId} 添加data-doc-id属性`);
+
             }
         } catch (error) {
             console.error('DocumentStyler: 添加data-doc-id属性失败:', error);
@@ -326,14 +326,14 @@ export default class DocumentStylerPlugin extends Plugin {
 
             // 防抖处理，避免短时间内重复的完整处理流程
             if (now - this.lastSwitchTime < this.switchDebounceDelay) {
-                console.log(`DocumentStyler: 快速切换到文档 ${newDocId}，仅更新ID，跳过完整处理`);
+
                 // 仍然需要更新面板以显示正确的文档信息
                 await this.dockPanel.updatePanel();
                 return;
             }
 
             this.lastSwitchTime = now;
-            console.log(`DocumentStyler: 完整处理文档切换到 ${newDocId}`);
+
 
             // 更新面板
             await this.dockPanel.updatePanel();
@@ -350,7 +350,7 @@ export default class DocumentStylerPlugin extends Plugin {
                     if (docSettings.crossReferenceEnabled) {
                         const protyle = this.documentManager.getCurrentProtyle();
                         if (protyle) {
-                            console.log('DocumentStyler: 文档切换后延迟检查交叉引用更新');
+
                             await this.crossReference.applyCrossReference(protyle);
                         }
                     }
@@ -402,7 +402,7 @@ export default class DocumentStylerPlugin extends Plugin {
             if (!protyle?.block?.rootID) return;
 
             const docId = protyle.block.rootID;
-            console.log(`DocumentStyler: 处理文档销毁事件 - ${docId}`);
+
 
             // 从活跃protyle集合中移除
             this.activeProtyles.delete(docId);
@@ -412,7 +412,7 @@ export default class DocumentStylerPlugin extends Plugin {
 
             if (!hasActiveProtyles) {
                 // 如果没有活跃的protyle了，清理所有样式
-                console.log('DocumentStyler: 没有活跃的protyle，清理所有样式');
+
                 await this.headingNumbering.clearNumbering(null);
                 await this.crossReference.clearCrossReference(protyle);
                 this.fontStyleManager.clearAllStyles();
@@ -422,7 +422,7 @@ export default class DocumentStylerPlugin extends Plugin {
                 this.documentManager.setNoActiveDocument();
                 await this.dockPanel.updatePanel();
             } else {
-                console.log(`DocumentStyler: 还有 ${this.activeProtyles.size} 个活跃的protyle，保留样式`);
+
             }
         } catch (error) {
             console.error('DocumentStyler: 文档销毁处理失败:', error);
@@ -452,7 +452,7 @@ export default class DocumentStylerPlugin extends Plugin {
                 // 处理内核推送的 savedoc 消息：用于拖拽排序、块类型转换等保存导致的结构变化
                 const rootId = data?.data?.rootID;
                 if (this.currentDocId && rootId === this.currentDocId) {
-                    console.log(`DocumentStyler: 收到WebSocket savedoc消息，当前文档ID: ${this.currentDocId}`);
+
                     if (typeof this.headingNumbering?.handleSaveDocMessage === 'function') {
                         await this.headingNumbering.handleSaveDocMessage(data);
                     }
@@ -668,15 +668,15 @@ export default class DocumentStylerPlugin extends Plugin {
         if (!docId) return;
 
         try {
-            console.log('DocumentStyler: 开始应用标题编号');
+
 
             // 获取文档设置
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
-            console.log('DocumentStyler: 文档设置获取成功', docSettings);
+
 
             // 使用文档的设置更新编号
             await this.headingNumbering.updateNumberingForDoc(docId);
-            console.log('DocumentStyler: 标题编号应用完成');
+
         } catch (error) {
             console.error('应用标题编号失败:', error);
         }
@@ -750,19 +750,19 @@ export default class DocumentStylerPlugin extends Plugin {
         if (!docId) return;
 
         try {
-            console.log(`DocumentStyler: 开始应用字体设置，文档ID: ${docId}`);
+
             const docSettings = await this.settingsManager.getDocumentSettings(docId);
-            console.log('DocumentStyler: 获取到文档设置', docSettings);
+
 
             // 检查是否启用了字体自定义
             if (!docSettings.customFontEnabled) {
-                console.log('DocumentStyler: 字体自定义未启用，清除字体样式');
+
                 await this.fontStyleManager.clearDocumentStyles(docId);
                 return;
             }
 
             await this.fontStyleManager.applyFontStyles(docId, docSettings.fontSettings);
-            console.log('DocumentStyler: 字体设置应用完成');
+
         } catch (error) {
             console.error('应用字体设置失败:', error);
         }
@@ -777,7 +777,7 @@ export default class DocumentStylerPlugin extends Plugin {
 
         try {
             await this.fontStyleManager.clearDocumentStyles(docId);
-            console.log('DocumentStyler: 字体设置清除完成');
+
         } catch (error) {
             console.error('清除字体设置失败:', error);
         }
@@ -871,7 +871,7 @@ export default class DocumentStylerPlugin extends Plugin {
                 const rect = editable.getBoundingClientRect();
                 return { left: rect.left, top: rect.top };
             }
-        } catch {}
+        } catch { }
 
         // 最后回退到视口左上角的小偏移，避免坐标为(0,0)遮挡
         return { left: 16, top: 16 };
@@ -1041,7 +1041,7 @@ export default class DocumentStylerPlugin extends Plugin {
 
             // 更新样式
             await this.updateCrossReferenceStyles(protyle);
-            console.log(`插入交叉引用: ${figure.type} ${figure.number}`);
+
             // 清空已保存的选择范围
             this.savedSelectionRange = null;
         } catch (error) {
@@ -1076,7 +1076,7 @@ export default class DocumentStylerPlugin extends Plugin {
             // 重新应用交叉引用样式
             await this.crossReference.applyCrossReference(protyle);
 
-            console.log('交叉引用样式已更新');
+
         } catch (error) {
             console.error('更新交叉引用样式失败:', error);
         }
@@ -1117,7 +1117,7 @@ export default class DocumentStylerPlugin extends Plugin {
      * - 仅选中文本：处理该文本所在块
      * - 选中多块：依次处理所有选中块
      */
-	private async handleSplitInlineBreaks(protyle: any): Promise<void> {
+    private async handleSplitInlineBreaks(protyle: any): Promise<void> {
         const blocks = this.getSelectedBlocks(protyle);
         let total = 0;
         if (blocks.length === 0) {
@@ -1139,28 +1139,28 @@ export default class DocumentStylerPlugin extends Plugin {
                 continue; // 无需拆分
             }
 
-			// 更新第一个块为第一行：复制原块所有属性，仅覆盖 updated
-			const firstInner = this.buildParagraphInnerHTML(htmlLines[0]);
-			const firstAttr = this.buildBlockAttrString(blockEl, { updated: this.generateUpdatedTimestamp() });
-			const firstBlockDom = this.wrapBlockWithAttributes(firstAttr, firstInner);
-			await updateBlock('dom', firstBlockDom, blockId);
+            // 更新第一个块为第一行：复制原块所有属性，仅覆盖 updated
+            const firstInner = this.buildParagraphInnerHTML(htmlLines[0]);
+            const firstAttr = this.buildBlockAttrString(blockEl, { updated: this.generateUpdatedTimestamp() });
+            const firstBlockDom = this.wrapBlockWithAttributes(firstAttr, firstInner);
+            await updateBlock('dom', firstBlockDom, blockId);
 
-			// 链式在该块之后插入后续行，保持原有顺序
-			let previousId: string = blockId;
-			for (let i = htmlLines.length - 1; i > 0; i--) {
-				const inner = this.buildParagraphInnerHTML(htmlLines[i]);
-				// 为新块复制原块属性，并生成新的 data-node-id 与 updated
-				const newId = this.generateBlockId();
-				const newAttr = this.buildBlockAttrString(blockEl, { 'data-node-id': newId, updated: this.generateUpdatedTimestamp() });
-				const blockDom = this.wrapBlockWithAttributes(newAttr, inner);
-				const ops = await insertBlock('dom', blockDom, undefined, previousId, undefined);
-				if (Array.isArray(ops) && ops.length > 0) {
-					const created = ops.find((op: any) => op.id);
-					if (created && created.id) {
-						previousId = created.id;
-					}
-				}
-			}
+            // 链式在该块之后插入后续行，保持原有顺序
+            let previousId: string = blockId;
+            for (let i = htmlLines.length - 1; i > 0; i--) {
+                const inner = this.buildParagraphInnerHTML(htmlLines[i]);
+                // 为新块复制原块属性，并生成新的 data-node-id 与 updated
+                const newId = this.generateBlockId();
+                const newAttr = this.buildBlockAttrString(blockEl, { 'data-node-id': newId, updated: this.generateUpdatedTimestamp() });
+                const blockDom = this.wrapBlockWithAttributes(newAttr, inner);
+                const ops = await insertBlock('dom', blockDom, undefined, previousId, undefined);
+                if (Array.isArray(ops) && ops.length > 0) {
+                    const created = ops.find((op: any) => op.id);
+                    if (created && created.id) {
+                        previousId = created.id;
+                    }
+                }
+            }
 
             total += htmlLines.length;
         }
@@ -1209,17 +1209,17 @@ export default class DocumentStylerPlugin extends Plugin {
                 }
             }
 
-			if (localChanged > 0) {
-				const afterHTML = temp.innerHTML;
-				if (afterHTML !== beforeHTML) {
-					const inner = this.buildParagraphInnerHTML(afterHTML, false);
-					// 保留原块所有属性，覆盖 updated
-					const attr = this.buildBlockAttrString(blockEl, { updated: this.generateUpdatedTimestamp() });
-					const blockDom = this.wrapBlockWithAttributes(attr, inner);
-					updates[blockId] = blockDom;
-					changed += localChanged;
-				}
-			}
+            if (localChanged > 0) {
+                const afterHTML = temp.innerHTML;
+                if (afterHTML !== beforeHTML) {
+                    const inner = this.buildParagraphInnerHTML(afterHTML, false);
+                    // 保留原块所有属性，覆盖 updated
+                    const attr = this.buildBlockAttrString(blockEl, { updated: this.generateUpdatedTimestamp() });
+                    const blockDom = this.wrapBlockWithAttributes(attr, inner);
+                    updates[blockId] = blockDom;
+                    changed += localChanged;
+                }
+            }
         }
 
         if (Object.keys(updates).length > 0) {
@@ -1254,143 +1254,143 @@ export default class DocumentStylerPlugin extends Plugin {
     /**
      * 构造段落块的内部 DOM（contenteditable + protyle-attr）
      */
-	private buildParagraphInnerHTML(editableInnerHTML: string, ensureAttr: boolean = true): string {
-		const attrPart = `<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>`;
-		const editablePart = `<div contenteditable="true" spellcheck="false">${editableInnerHTML}</div>`;
-		return ensureAttr ? `${editablePart}${attrPart}` : `${editablePart}${attrPart}`;
-	}
+    private buildParagraphInnerHTML(editableInnerHTML: string, ensureAttr: boolean = true): string {
+        const attrPart = `<div class="protyle-attr" contenteditable="false">&ZeroWidthSpace;</div>`;
+        const editablePart = `<div contenteditable="true" spellcheck="false">${editableInnerHTML}</div>`;
+        return ensureAttr ? `${editablePart}${attrPart}` : `${editablePart}${attrPart}`;
+    }
 
     /**
-	 * 生成块属性字符串：从现有块复制所有属性，可传入 overrides 覆盖，excludes 排除
+     * 生成块属性字符串：从现有块复制所有属性，可传入 overrides 覆盖，excludes 排除
      */
-	private buildBlockAttrString(blockEl: HTMLElement, overrides: Record<string, string> = {}, excludes: string[] = []): string {
-		const names = blockEl.getAttributeNames();
-		const excludeSet = new Set(excludes.map(s => s.toLowerCase()));
-		const parts: string[] = [];
-		for (const name of names) {
-			if (excludeSet.has(name.toLowerCase())) continue;
-			const value = blockEl.getAttribute(name);
-			if (value === null) continue;
-			// 若在 overrides 中会在后续统一附加覆盖
-			if (Object.prototype.hasOwnProperty.call(overrides, name)) continue;
-			parts.push(`${name}="${value}"`);
-		}
-		// 附加覆盖项
-		for (const [k, v] of Object.entries(overrides)) {
-			parts.push(`${k}="${v}"`);
-		}
-		return parts.join(' ');
-	}
+    private buildBlockAttrString(blockEl: HTMLElement, overrides: Record<string, string> = {}, excludes: string[] = []): string {
+        const names = blockEl.getAttributeNames();
+        const excludeSet = new Set(excludes.map(s => s.toLowerCase()));
+        const parts: string[] = [];
+        for (const name of names) {
+            if (excludeSet.has(name.toLowerCase())) continue;
+            const value = blockEl.getAttribute(name);
+            if (value === null) continue;
+            // 若在 overrides 中会在后续统一附加覆盖
+            if (Object.prototype.hasOwnProperty.call(overrides, name)) continue;
+            parts.push(`${name}="${value}"`);
+        }
+        // 附加覆盖项
+        for (const [k, v] of Object.entries(overrides)) {
+            parts.push(`${k}="${v}"`);
+        }
+        return parts.join(' ');
+    }
 
-	/**
-	 * 包裹为完整块 DOM，使用给定属性字符串
-	 */
-	private wrapBlockWithAttributes(attrString: string, innerHTML: string): string {
-		return `<div ${attrString}>${innerHTML}</div>`;
-	}
+    /**
+     * 包裹为完整块 DOM，使用给定属性字符串
+     */
+    private wrapBlockWithAttributes(attrString: string, innerHTML: string): string {
+        return `<div ${attrString}>${innerHTML}</div>`;
+    }
 
 
 
-	private generateUpdatedTimestamp(): string {
-		const d = new Date();
-		const pad = (n: number) => n.toString().padStart(2, '0');
-		return (
-			`${d.getFullYear()}` +
-			pad(d.getMonth() + 1) +
-			pad(d.getDate()) +
-			pad(d.getHours()) +
-			pad(d.getMinutes()) +
-			pad(d.getSeconds())
-		);
-	}
+    private generateUpdatedTimestamp(): string {
+        const d = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return (
+            `${d.getFullYear()}` +
+            pad(d.getMonth() + 1) +
+            pad(d.getDate()) +
+            pad(d.getHours()) +
+            pad(d.getMinutes()) +
+            pad(d.getSeconds())
+        );
+    }
 
-	/**
-	 * 生成块 ID：YYYYMMDDHHmmss-xxxxxxx（小写字母数字）
-	 */
-	private generateBlockId(): string {
-		const ts = this.generateUpdatedTimestamp();
-		const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-		let suffix = '';
-		for (let i = 0; i < 7; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
-		return `${ts}-${suffix}`;
-	}
+    /**
+     * 生成块 ID：YYYYMMDDHHmmss-xxxxxxx（小写字母数字）
+     */
+    private generateBlockId(): string {
+        const ts = this.generateUpdatedTimestamp();
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let suffix = '';
+        for (let i = 0; i < 7; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+        return `${ts}-${suffix}`;
+    }
 
     /**
      * 将可编辑区域按换行节点拆分为多个 HTML 片段（合法 DOM）
      * 识别的换行标记：<span data-type="br"></span> 与 <br>
      */
-	private splitEditableByBreaks(editable: HTMLElement): string[] {
-		// 在克隆的容器上操作：把文本节点中的 "\n" 转换为显式的换行标记，以统一处理
-		const working = editable.cloneNode(true) as HTMLElement;
+    private splitEditableByBreaks(editable: HTMLElement): string[] {
+        // 在克隆的容器上操作：把文本节点中的 "\n" 转换为显式的换行标记，以统一处理
+        const working = editable.cloneNode(true) as HTMLElement;
 
-		// 收集所有文本节点（快照），避免遍历过程中结构修改导致迭代异常
-		const textNodes: Text[] = [];
-		const walker = document.createTreeWalker(working, NodeFilter.SHOW_TEXT);
-		let current: Node | null = walker.nextNode();
-		while (current) {
-			textNodes.push(current as Text);
-			current = walker.nextNode();
-		}
+        // 收集所有文本节点（快照），避免遍历过程中结构修改导致迭代异常
+        const textNodes: Text[] = [];
+        const walker = document.createTreeWalker(working, NodeFilter.SHOW_TEXT);
+        let current: Node | null = walker.nextNode();
+        while (current) {
+            textNodes.push(current as Text);
+            current = walker.nextNode();
+        }
 
-		// 将文本中的换行符转换为 <span data-type="br"></span>
-		for (const textNode of textNodes) {
-			const value = textNode.nodeValue || '';
-			if (!value || value.indexOf('\n') === -1) continue;
+        // 将文本中的换行符转换为 <span data-type="br"></span>
+        for (const textNode of textNodes) {
+            const value = textNode.nodeValue || '';
+            if (!value || value.indexOf('\n') === -1) continue;
 
-			const parts = value.split('\n');
-			const frag = document.createDocumentFragment();
-			for (let i = 0; i < parts.length; i++) {
-				if (parts[i]) {
-					frag.appendChild(document.createTextNode(parts[i]));
-				}
-				if (i < parts.length - 1) {
-					const brSpan = document.createElement('span');
-					brSpan.setAttribute('data-type', 'br');
-					frag.appendChild(brSpan);
-				}
-			}
-			textNode.parentNode?.replaceChild(frag, textNode);
-		}
+            const parts = value.split('\n');
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < parts.length; i++) {
+                if (parts[i]) {
+                    frag.appendChild(document.createTextNode(parts[i]));
+                }
+                if (i < parts.length - 1) {
+                    const brSpan = document.createElement('span');
+                    brSpan.setAttribute('data-type', 'br');
+                    frag.appendChild(brSpan);
+                }
+            }
+            textNode.parentNode?.replaceChild(frag, textNode);
+        }
 
-		// 现在工作容器中的所有换行都已显式化，继续使用统一的断点切分逻辑
-		const breaks = Array.from(working.querySelectorAll('span[data-type="br"], br')) as Node[];
-		const fragments: string[] = [];
-		const tmp = document.createElement('div');
+        // 现在工作容器中的所有换行都已显式化，继续使用统一的断点切分逻辑
+        const breaks = Array.from(working.querySelectorAll('span[data-type="br"], br')) as Node[];
+        const fragments: string[] = [];
+        const tmp = document.createElement('div');
 
-		const pushRangeHTML = (startNode: Node | null, endNode: Node | null) => {
-			const range = document.createRange();
-			if (startNode) {
-				range.setStartAfter(startNode);
-			} else {
-				range.setStart(working, 0);
-			}
-			if (endNode) {
-				range.setEndBefore(endNode);
-			} else {
-				range.setEnd(working, working.childNodes.length);
-			}
-			const frag = range.cloneContents();
-			tmp.innerHTML = '';
-			tmp.appendChild(frag);
-			const html = (tmp.innerHTML || '').trim();
-			if (html) fragments.push(html);
-		};
+        const pushRangeHTML = (startNode: Node | null, endNode: Node | null) => {
+            const range = document.createRange();
+            if (startNode) {
+                range.setStartAfter(startNode);
+            } else {
+                range.setStart(working, 0);
+            }
+            if (endNode) {
+                range.setEndBefore(endNode);
+            } else {
+                range.setEnd(working, working.childNodes.length);
+            }
+            const frag = range.cloneContents();
+            tmp.innerHTML = '';
+            tmp.appendChild(frag);
+            const html = (tmp.innerHTML || '').trim();
+            if (html) fragments.push(html);
+        };
 
-		if (breaks.length === 0) {
-			const html = (working.innerHTML || '').trim();
-			return html ? [html] : [];
-		}
+        if (breaks.length === 0) {
+            const html = (working.innerHTML || '').trim();
+            return html ? [html] : [];
+        }
 
-		// 开头 -> 第一个换行前
-		pushRangeHTML(null, breaks[0]);
-		// 中间段
-		for (let i = 0; i < breaks.length - 1; i++) {
-			pushRangeHTML(breaks[i], breaks[i + 1]);
-		}
-		// 最后一个换行 -> 末尾
-		pushRangeHTML(breaks[breaks.length - 1], null);
+        // 开头 -> 第一个换行前
+        pushRangeHTML(null, breaks[0]);
+        // 中间段
+        for (let i = 0; i < breaks.length - 1; i++) {
+            pushRangeHTML(breaks[i], breaks[i + 1]);
+        }
+        // 最后一个换行 -> 末尾
+        pushRangeHTML(breaks[breaks.length - 1], null);
 
-		return fragments;
-	}
+        return fragments;
+    }
 
 }
