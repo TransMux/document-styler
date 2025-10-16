@@ -501,4 +501,39 @@ export async function setDocumentAttr(docId: string, attrs: Record<string, strin
     }
 }
 
+/**
+ * 获取文档中的图表数据，包含编号信息
+ * @param docId 文档ID
+ * @returns 图表信息数组
+ */
+export async function getDocumentFigures(docId: string): Promise<any[]> {
+    try {
+        const rawFigures = await queryDocumentFigures(docId);
+        
+        // 为图表分配编号
+        let imageNumber = 1;
+        let tableNumber = 1;
+        
+        const figuresWithNumbers = rawFigures.map(figure => {
+            if (figure.figureType === 'image') {
+                return {
+                    ...figure,
+                    number: imageNumber++
+                };
+            } else if (figure.figureType === 'table') {
+                return {
+                    ...figure,
+                    number: tableNumber++
+                };
+            }
+            return figure;
+        });
+        
+        return figuresWithNumbers;
+    } catch (error) {
+        console.error('获取文档图表失败:', error);
+        return [];
+    }
+}
+
 

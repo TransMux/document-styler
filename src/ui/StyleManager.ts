@@ -656,6 +656,8 @@ export class StyleManager implements IStyleManager {
      */
     private generateHeadingNumberingCSS(headingMap: IHeadingNumberMap): string {
         let css = '';
+        
+        // 生成编辑器中的标题编号样式
         for (const [blockId, number] of Object.entries(headingMap)) {
             const selector = this.preferBlockAttr
                 ? `.protyle-wysiwyg [data-node-id="${blockId}"] [contenteditable]::before`
@@ -675,7 +677,75 @@ export class StyleManager implements IStyleManager {
             }\n`;
             }
         }
+
+        // 生成导出和打印时的标题编号样式
+        css += this.generateExportHeadingNumberingCSS(headingMap);
+        
         return css;
+    }
+
+    /**
+     * 生成导出和打印时的标题编号CSS
+     * 确保在HTML导出、PDF导出、Word导出时都显示标题编号
+     * @param headingMap 标题编号映射
+     * @returns 导出CSS字符串
+     */
+    private generateExportHeadingNumberingCSS(headingMap: IHeadingNumberMap): string {
+        let exportCSS = '';
+        
+        // 为导出的HTML添加标题编号样式
+        // 这些样式会在导出的HTML文件中生效
+        for (const [blockId, number] of Object.entries(headingMap)) {
+            // 支持导出HTML的结构（.protyle-wysiwyg 和 .b3-typography）
+            const selectors = [
+                `.protyle-wysiwyg [data-node-id="${blockId}"] [contenteditable]::before`,
+                `.b3-typography [data-node-id="${blockId}"] [contenteditable]::before`,
+                `.protyle-wysiwyg [data-node-id="${blockId}"] [spellcheck]::before`,
+                `.b3-typography [data-node-id="${blockId}"] [spellcheck]::before`
+            ];
+            
+            selectors.forEach(selector => {
+                exportCSS += `${selector} {
+                    content: "${number}";
+                    margin-right: 4px;
+                    color: #666 !important;
+                    font-weight: normal !important;
+                }\n`;
+            });
+        }
+
+        // 添加打印专用样式
+        if (Object.keys(headingMap).length > 0) {
+            exportCSS += '\n/* 打印和导出专用标题编号样式 */\n';
+            exportCSS += '@media print {\n';
+            
+            for (const [blockId, number] of Object.entries(headingMap)) {
+                // 确保打印时标题编号显示
+                const printSelectors = [
+                    `.protyle-wysiwyg [data-node-id="${blockId}"] [contenteditable]::before`,
+                    `.b3-typography [data-node-id="${blockId}"] [contenteditable]::before`,
+                    `.protyle-wysiwyg [data-node-id="${blockId}"] [spellcheck]::before`,
+                    `.b3-typography [data-node-id="${blockId}"] [spellcheck]::before`,
+                    `[data-node-id="${blockId}"] [contenteditable]::before`,
+                    `[data-node-id="${blockId}"] [spellcheck]::before`
+                ];
+                
+                printSelectors.forEach(selector => {
+                    exportCSS += `    ${selector} {
+                        content: "${number}" !important;
+                        margin-right: 4px !important;
+                        color: #000 !important;
+                        font-weight: normal !important;
+                        display: inline !important;
+                        visibility: visible !important;
+                    }\n`;
+                });
+            }
+            
+            exportCSS += '}\n';
+        }
+        
+        return exportCSS;
     }
 
     /**
