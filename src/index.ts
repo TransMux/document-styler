@@ -98,7 +98,6 @@ export default class DocumentStylerPlugin extends Plugin {
             langText: "行内换行转多块 (break inline to blocks)",
             hotkey: "",
             callback: async () => {
-                debugger
                 const protyle = this.documentManager.getCurrentProtyle();
                 if (protyle) {
                     await this.handleSplitInlineBreaks(protyle);
@@ -112,7 +111,6 @@ export default class DocumentStylerPlugin extends Plugin {
             langText: "将选中范围的图片设置为行高 （set inline image to line height）",
             hotkey: "",
             callback: async () => {
-                debugger
                 const protyle = this.documentManager.getCurrentProtyle();
                 if (protyle) {
                     await this.handleSetImagesToLineHeight(protyle);
